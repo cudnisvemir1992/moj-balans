@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eef5fb" id="themeColorMeta">
+  <meta name="description" content="Moj balans – jednoduchý přehled kcal, bílkovin a energetické bilance.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Moj balans">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <title>Moj balans</title>
+
+<style>
+:root{
+  --bg:#f5f9fd;
+  --card:#ffffff;
+  --soft:#eaf3fb;
+  --soft2:#f4f8fc;
+  --text:#18212b;
+  --muted:#677586;
+  --line:#d8e4ef;
+  --accent:#2f78bd;
+  --accent-2:#5e9bd1;
+  --accent-soft:#e3f0fb;
+  --positive:#3e7d67;
+  --positive-soft:#e7f3ee;
+  --warm:#9a7440;
+  --warm-soft:#f7efe4;
+  --shadow:0 7px 26px rgba(31,70,110,.07);
+  --radius:22px;
+}
+
+html[data-theme="green"]{
+  --bg:#f6f7f4; --card:#ffffff; --soft:#eef2ed; --soft2:#f7f8f6;
+  --text:#1f2420; --muted:#6c746e; --line:#dfe4df;
+  --accent:#4f8a5b; --accent-2:#7ba984; --accent-soft:#edf6ee;
+  --positive:#4f8a5b; --positive-soft:#edf6ee; --warm:#8c741f; --warm-soft:#fff7db;
+  --shadow:0 7px 26px rgba(55,85,60,.06);
+}
+html[data-theme="neutral"]{
+  --bg:#f5f5f4; --card:#ffffff; --soft:#eeeeec; --soft2:#f8f8f7;
+  --text:#242424; --muted:#737373; --line:#dededb;
+  --accent:#656b73; --accent-2:#8a9097; --accent-soft:#eceef0;
+  --positive:#66776d; --positive-soft:#edf2ef; --warm:#8a765c; --warm-soft:#f5f0e9;
+  --shadow:0 7px 26px rgba(0,0,0,.05);
+}
+html[data-theme="darkblue"]{
+  --bg:#eef2f7; --card:#ffffff; --soft:#e2e9f1; --soft2:#f6f8fb;
+  --text:#132033; --muted:#617086; --line:#d3dce7;
+  --accent:#173e69; --accent-2:#35658f; --accent-soft:#e0ebf5;
+  --positive:#416b63; --positive-soft:#e5efed; --warm:#876f50; --warm-soft:#f3ede6;
+  --shadow:0 7px 26px rgba(17,48,82,.08);
+}
+html[data-theme="rainbow"]{
+  --bg:#fbf8ff; --card:#ffffff; --soft:#f3effb; --soft2:#fffaf4;
+  --text:#242038; --muted:#726c82; --line:#e4dff0;
+  --accent:#6d5bd0; --accent-2:#2f94c8; --accent-soft:#eeeaff;
+  --positive:#3c8d77; --positive-soft:#e4f5ef; --warm:#d8845a; --warm-soft:#fff0e8;
+  --shadow:0 7px 26px rgba(81,61,148,.07);
+}
+html[data-theme="pastel"]{
+  --bg:#fff9fb; --card:#ffffff; --soft:#f6eef7; --soft2:#fffaf4;
+  --text:#302739; --muted:#796f80; --line:#eadfea;
+  --accent:#7f70ba; --accent-2:#91a9d2; --accent-soft:#f0ecfb;
+  --positive:#6f9c86; --positive-soft:#edf7f1; --warm:#c49170; --warm-soft:#fbf0e8;
+  --shadow:0 7px 26px rgba(99,80,125,.06);
+}
+html[data-theme="sea"]{
+  --bg:#f2fafb; --card:#ffffff; --soft:#e6f4f5; --soft2:#f5fbfb;
+  --text:#173036; --muted:#637a80; --line:#d5e9eb;
+  --accent:#2e8295; --accent-2:#55a5a2; --accent-soft:#e3f3f4;
+  --positive:#4f8b76; --positive-soft:#e7f5ef; --warm:#8c7b55; --warm-soft:#f5f0e4;
+  --shadow:0 7px 26px rgba(42,111,122,.07);
+}
+
+*{box-sizing:border-box}
+html{background:var(--bg); color-scheme:light}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+button,input{font:inherit}
+button{touch-action:manipulation}
+.wrap{width:min(780px,100%);margin:0 auto;padding:14px 14px 54px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand{font-size:1.55rem;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.iconbtn,.btn{
+  border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:14px;min-height:44px;padding:9px 12px
+}
+.iconbtn{min-width:44px;font-size:1.15rem}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.soft{background:var(--soft)}
+.btn.full{width:100%}
+.tabs{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+  background:var(--card);padding:5px;border:1px solid var(--line);
+  border-radius:16px;box-shadow:var(--shadow);margin-bottom:12px
+}
+.tab{border:0;background:transparent;border-radius:12px;min-height:42px;font-weight:700;color:var(--text)}
+.tab.active{background:var(--accent);color:white}
+.navline{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin:4px 0 12px}
+.navline .label{text-align:center;font-weight:750}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)
+}
+.card h2,.card h3{margin:0}
+.section-title{font-size:1.02rem;margin-bottom:12px!important}
+.input-row{
+  display:grid;grid-template-columns:1fr 135px auto;gap:10px;align-items:center;
+  padding:13px 0;border-bottom:1px solid var(--line)
+}
+.input-row:last-child{border-bottom:0}
+.metric-name{font-weight:750}
+.metric-sub{font-size:.82rem;color:var(--muted);margin-top:3px}
+.num-input{
+  width:100%;min-height:46px;border:1px solid var(--line);border-radius:13px;
+  background:white;color:var(--text);padding:9px 10px;text-align:right;font-size:1.08rem;font-weight:700
+}
+.unit{font-size:.88rem;color:var(--muted)}
+.balance-card{
+  background:linear-gradient(145deg,var(--accent-soft),var(--card));
+  text-align:center;padding:18px
+}
+.balance-title{font-size:.9rem;color:var(--muted)}
+.balance-number{font-size:2.25rem;font-weight:850;color:var(--accent);margin:7px 0 3px}
+.tdee-strong{font-size:1.02rem;font-weight:800;margin-top:6px}
+.work-est{font-size:.84rem;color:var(--muted);font-weight:400}
+.message{background:var(--soft2);font-size:.93rem}
+.stats-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.stat{
+  border:1px solid var(--line);border-radius:17px;padding:14px;background:var(--card)
+}
+.stat-label{font-size:.88rem;color:var(--muted)}
+.stat-value{font-size:1.55rem;font-weight:800;margin-top:4px}
+.stat-note{font-size:.82rem;color:var(--muted);margin-top:3px}
+.progress{
+  height:9px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:9px
+}
+.progress > div{height:100%;background:var(--accent);width:0}
+.chart{padding-top:4px}
+.chart-title{font-size:.88rem;font-weight:750;margin-bottom:10px}
+.bar-area{height:190px;display:flex;align-items:end;gap:8px;border-bottom:1px solid var(--line);padding:0 4px 4px}
+.bar-wrap{flex:1;text-align:center;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+.bar{width:70%;margin:auto auto 0;background:linear-gradient(var(--accent-2),var(--accent));border-radius:7px 7px 2px 2px;min-height:2px}
+.bar-label{font-size:.74rem;margin-top:6px;color:var(--muted)}
+.tdee-line{position:relative;height:0;border-top:1.5px dashed var(--accent);opacity:.65}
+.tdee-line span{
+  position:absolute;right:0;bottom:4px;font-size:.72rem;background:var(--card);padding-left:5px;color:var(--accent)
+}
+.month-list{display:grid;gap:7px}
+.month-row{
+  display:grid;grid-template-columns:86px 1fr 1fr 1fr;gap:8px;padding:10px 9px;
+  border-radius:13px;align-items:center;font-size:.88rem
+}
+.month-row:nth-child(odd){background:var(--soft2)}
+.month-row.head{font-size:.76rem;color:var(--muted);background:transparent;padding-top:0}
+.month-row.today{background:var(--accent-soft)}
+.month-row .r{text-align:right}
+.net-neg{color:var(--positive);font-weight:800}
+.net-pos{color:var(--warm);font-weight:800}
+.settings-grid{display:grid;gap:10px}
+.setting-line{
+  display:grid;grid-template-columns:1fr 120px auto;gap:9px;align-items:center;
+  padding:12px;background:var(--soft2);border-radius:14px
+}
+.theme-list{display:grid;gap:9px}
+.theme-option{
+  display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+  border:1px solid var(--line);border-radius:15px;padding:12px;background:var(--card);cursor:pointer
+}
+.theme-option.selected{outline:2px solid var(--accent);outline-offset:-2px}
+.swatches{display:flex}
+.swatch{width:25px;height:25px;border-radius:50%;border:2px solid white;margin-left:-6px;box-shadow:0 0 0 1px rgba(0,0,0,.05)}
+.swatch:first-child{margin-left:0}
+.theme-name{font-weight:750}
+.theme-desc{font-size:.8rem;color:var(--muted);margin-top:2px}
+.check{font-size:1.2rem;color:var(--accent)}
+.hidden{display:none!important}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.notice{font-size:.82rem;color:var(--muted);margin-top:9px;line-height:1.45}
+.footer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:17px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
+@media(max-width:520px){
+  .wrap{padding:12px 10px 46px}
+  .brand{font-size:1.4rem}
+  .input-row{grid-template-columns:1fr 112px auto}
+  .month-row{grid-template-columns:74px 1fr 1fr 1fr;font-size:.82rem;gap:5px}
+  .actions{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="topbar">
+    <div class="brand">Moj balans</div>
+    <button class="iconbtn" id="settingsBtn" aria-label="Nastavení">⚙</button>
+  </header>
+
+  <nav class="tabs" id="mainTabs">
+    <button class="tab active" data-view="day">Den</button>
+    <button class="tab" data-view="week">Týden</button>
+    <button class="tab" data-view="month">Měsíc</button>
+  </nav>
+
+  <section id="dayView">
+    <div class="navline">
+      <button class="iconbtn" id="prevDay">‹</button>
+      <div class="label" id="dayLabel"></div>
+      <button class="iconbtn" id="nextDay">›</button>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Dnešní záznam</h2>
+      <div class="input-row">
+        <div>
+          <div class="metric-name">Kcal</div>
+          <div class="metric-sub">Skutečný denní příjem</div>
+        </div>
+        <input id="kcalInput" class="num-input" type="number" min="0" inputmode="numeric" placeholder="např. 1580">
+        <div class="unit">kcal</div>
+      </div>
+      <div class="input-row">
+        <div>
+          <div class="metric-name">Bílkoviny</div>
+          <div class="metric-sub">Celkem za den</div>
+        </div>
+        <input id="proteinInput" class="num-input" type="number" min="0" inputmode="decimal" step="0.1" placeholder="např. 101">
+        <div class="unit">g</div>
+      </div>
+    </section>
+
+    <section class="card balance-card">
+      <div class="balance-title">Odhadovaná bilance vůči TDEE</div>
+      <div id="dayBalance" class="balance-number">—</div>
+      <div><span class="tdee-strong">TDEE <span id="dayTdee">1800</span> kcal</span> <span class="work-est">· pracovní odhad</span></div>
+    </section>
+
+    <section class="card message">
+      Dlouhodobě malé volby = velký posun.
+    </section>
+
+    <button class="btn primary full" id="todayBtn">Dnešek</button>
+  </section>
+
+  <section id="weekView" class="hidden">
+    <div class="navline">
+      <button class="iconbtn" id="prevWeek">‹</button>
+      <div class="label" id="weekLabel"></div>
+      <button class="iconbtn" id="nextWeek">›</button>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Přehled týdne</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">Průměrný příjem</div>
+          <div class="stat-value"><span id="weekKcal">—</span> <small>kcal</small></div>
+          <div class="stat-note">z TDEE <span id="weekTdee">1800</span> kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Průměr bílkovin</div>
+          <div class="stat-value"><span id="weekProtein">—</span> <small>g</small></div>
+          <div class="stat-note">cíl <span id="weekProteinTarget">100</span> g/den</div>
+          <div class="progress"><div id="weekProteinProgress"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" id="weekBalanceLabel">Odhadovaný deficit</div>
+          <div class="stat-value"><span id="weekBalance">—</span> <small>kcal</small></div>
+          <div class="stat-note">za zapsané dny tohoto týdne</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card chart">
+      <div class="chart-title">Příjem (kcal) za zapsané dny</div>
+      <div class="tdee-line" id="weekTdeeLine"><span>TDEE 1800 kcal</span></div>
+      <div class="bar-area" id="weekBars"></div>
+      <div class="notice">Průměr počítáme jen ze dnů, které mají zadané kcal.</div>
+    </section>
+  </section>
+
+  <section id="monthView" class="hidden">
+    <div class="navline">
+      <button class="iconbtn" id="prevMonth">‹</button>
+      <div class="label" id="monthLabel"></div>
+      <button class="iconbtn" id="nextMonth">›</button>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Přehled měsíce</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">Průměrný příjem</div>
+          <div class="stat-value"><span id="monthKcal">—</span> <small>kcal</small></div>
+          <div class="stat-note">z TDEE <span id="monthTdee">1800</span> kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Průměr bílkovin</div>
+          <div class="stat-value"><span id="monthProtein">—</span> <small>g</small></div>
+          <div class="stat-note">cíl <span id="monthProteinTarget">100</span> g/den</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" id="monthBalanceLabel">Odhadovaný deficit</div>
+          <div class="stat-value"><span id="monthBalance">—</span> <small>kcal</small></div>
+          <div class="stat-note">za zapsané dny tohoto měsíce</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Zapsané dny</h2>
+      <div class="month-list" id="monthList"></div>
+    </section>
+  </section>
+
+  <section id="settingsView" class="hidden">
+    <div class="navline">
+      <button class="iconbtn" id="backSettings">‹</button>
+      <div class="label">Nastavení</div>
+      <span></span>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Moje hodnoty</h2>
+      <div class="settings-grid">
+        <label class="setting-line">
+          <div>
+            <div class="metric-name">BMR</div>
+            <div class="metric-sub">informativní hodnota</div>
+          </div>
+          <input id="bmrSetting" class="num-input" type="number" min="0">
+          <div class="unit">kcal</div>
+        </label>
+        <label class="setting-line">
+          <div>
+            <div class="metric-name">TDEE</div>
+            <div class="metric-sub">pracovní odhad</div>
+          </div>
+          <input id="tdeeSetting" class="num-input" type="number" min="0">
+          <div class="unit">kcal</div>
+        </label>
+        <label class="setting-line">
+          <div>
+            <div class="metric-name">Cíl bílkovin</div>
+            <div class="metric-sub">referenční průměr</div>
+          </div>
+          <input id="proteinTargetSetting" class="num-input" type="number" min="0">
+          <div class="unit">g</div>
+        </label>
+      </div>
+      <div class="notice">TDEE je pracovní odhad. BMR i TDEE můžeš kdykoli upravit; appka nepředstírá laboratorní přesnost.</div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Téma</h2>
+      <div id="themeList" class="theme-list"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Data</h2>
+      <div class="actions">
+        <button class="btn primary" id="exportBtn">Exportovat data (JSON)</button>
+        <button class="btn" id="importBtn">Importovat JSON</button>
+      </div>
+      <input id="importFile" type="file" accept=".json,application/json" class="hidden">
+      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha.</div>
+    </section>
+  </section>
+
+  <div class="footer">Moj balans · jednoduchý přehled příjmu a bilance</div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'moj_balans_v1';
+
+  const THEMES = [
+    {id:'blue', name:'Modré', desc:'Výchozí klidné modré tóny', colors:['#2f78bd','#dfeefa','#ffffff']},
+    {id:'green', name:'Zelené', desc:'Sesterské téma k Moj ritam', colors:['#4f8a5b','#edf6ee','#ffffff']},
+    {id:'neutral', name:'Neutrální', desc:'Minimalistické šedé tóny', colors:['#656b73','#eeeeec','#ffffff']},
+    {id:'darkblue', name:'Tmavě modré', desc:'Hlubší elegantní modré', colors:['#173e69','#e0ebf5','#ffffff']},
+    {id:'rainbow', name:'Duha', desc:'Veselé barevné akcenty', colors:['#6d5bd0','#2f94c8','#3c8d77','#d8845a']},
+    {id:'pastel', name:'Pastel mix', desc:'Jemná směs modré, fialové a růžové', colors:['#7f70ba','#91a9d2','#e8b7c9']},
+    {id:'sea', name:'Moře', desc:'Modrá, tyrkysová a zelená', colors:['#2e8295','#55a5a2','#8bc7b0']}
+  ];
+
+  const DAY_NAMES = ['Ne','Po','Út','St','Čt','Pá','So'];
+  const MONTH_NAMES = ['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
+
+  let app = {
+    settings:{bmr:1562,tdee:1800,proteinTarget:100,theme:'blue'},
+    days:{}
+  };
+
+  let selectedDate = todayLocal();
+  let weekAnchor = mondayOf(selectedDate);
+  let monthAnchor = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+  let lastMainView = 'day';
+
+  function pad(n){return String(n).padStart(2,'0')}
+  function cloneDate(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+  function todayLocal(){return cloneDate(new Date())}
+  function dateKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+  function addDays(d,n){const x=cloneDate(d);x.setDate(x.getDate()+n);return x}
+  function mondayOf(date){
+    const d=cloneDate(date), day=d.getDay(), delta=day===0?-6:1-day;
+    d.setDate(d.getDate()+delta);return d
+  }
+  function fmtNum(n,maxFrac=0){
+    return new Intl.NumberFormat('cs-CZ',{maximumFractionDigits:maxFrac}).format(n)
+  }
+  function formatDate(d){return `${DAY_NAMES[d.getDay()]} ${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()}`}
+  function formatWeek(m){const s=addDays(m,6);return `${m.getDate()}. ${m.getMonth()+1}. – ${s.getDate()}. ${s.getMonth()+1}. ${s.getFullYear()}`}
+  function formatMonth(d){return `${MONTH_NAMES[d.getMonth()].charAt(0).toUpperCase()+MONTH_NAMES[d.getMonth()].slice(1)} ${d.getFullYear()}`}
+  function dayData(d){
+    const k=dateKey(d);
+    if(!app.days[k]) app.days[k]={kcal:'',protein:''};
+    return app.days[k];
+  }
+  function numeric(v){
+    const n=Number(String(v).replace(',','.'));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function load(){
+    try{
+      const raw=localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed=JSON.parse(raw);
+        if(parsed && parsed.days && parsed.settings) app=parsed;
+      }
+    }catch(e){}
+    app.settings = {
+      bmr:Number(app.settings?.bmr)||1562,
+      tdee:Number(app.settings?.tdee)||1800,
+      proteinTarget:Number(app.settings?.proteinTarget)||100,
+      theme:THEMES.some(t=>t.id===app.settings?.theme)?app.settings.theme:'blue'
+    };
+  }
+  function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(app))}
+
+  function applyTheme(){
+    const t=app.settings.theme || 'blue';
+    document.documentElement.dataset.theme=t==='blue'?'':t;
+    if(t==='blue') document.documentElement.removeAttribute('data-theme');
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#eef5fb';
+    document.getElementById('themeColorMeta').setAttribute('content',color);
+  }
+
+  function showMain(view){
+    lastMainView=view;
+    document.querySelectorAll('#mainTabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+    document.getElementById('dayView').classList.toggle('hidden',view!=='day');
+    document.getElementById('weekView').classList.toggle('hidden',view!=='week');
+    document.getElementById('monthView').classList.toggle('hidden',view!=='month');
+    document.getElementById('settingsView').classList.add('hidden');
+    document.getElementById('mainTabs').classList.remove('hidden');
+    render();
+  }
+
+  function showSettings(){
+    document.getElementById('dayView').classList.add('hidden');
+    document.getElementById('weekView').classList.add('hidden');
+    document.getElementById('monthView').classList.add('hidden');
+    document.getElementById('settingsView').classList.remove('hidden');
+    document.getElementById('mainTabs').classList.add('hidden');
+    renderSettings();
+  }
+
+  function renderDay(){
+    const d=dayData(selectedDate);
+    document.getElementById('dayLabel').textContent=formatDate(selectedDate);
+    document.getElementById('kcalInput').value=d.kcal ?? '';
+    document.getElementById('proteinInput').value=d.protein ?? '';
+    document.getElementById('dayTdee').textContent=fmtNum(app.settings.tdee);
+
+    const kcal=numeric(d.kcal);
+    const box=document.getElementById('dayBalance');
+    if(kcal===null || d.kcal===''){
+      box.textContent='—';
+      box.className='balance-number';
+    }else{
+      const balance=Math.round(kcal-app.settings.tdee);
+      if(balance<0){
+        box.textContent=`−${fmtNum(Math.abs(balance))} kcal`;
+        box.className='balance-number net-neg';
+      }else if(balance>0){
+        box.textContent=`+${fmtNum(balance)} kcal`;
+        box.className='balance-number net-pos';
+      }else{
+        box.textContent='0 kcal';
+        box.className='balance-number';
+      }
+    }
+  }
+
+  function weekEntries(){
+    const out=[];
+    for(let i=0;i<7;i++){
+      const date=addDays(weekAnchor,i), d=app.days[dateKey(date)];
+      out.push({date,data:d || null});
+    }
+    return out;
+  }
+  function aggregate(entries){
+    const kcalVals=[], proteinVals=[];
+    for(const e of entries){
+      if(!e.data) continue;
+      const k=numeric(e.data.kcal), p=numeric(e.data.protein);
+      if(k!==null && e.data.kcal!=='') kcalVals.push(k);
+      if(p!==null && e.data.protein!=='') proteinVals.push(p);
+    }
+    const avgKcal=kcalVals.length?kcalVals.reduce((a,b)=>a+b,0)/kcalVals.length:null;
+    const avgProtein=proteinVals.length?proteinVals.reduce((a,b)=>a+b,0)/proteinVals.length:null;
+    // Net energy balance only for days with entered kcal.
+    const net=kcalVals.length?kcalVals.reduce((sum,k)=>sum+(k-app.settings.tdee),0):null;
+    return {avgKcal,avgProtein,net,kcalCount:kcalVals.length,proteinCount:proteinVals.length};
+  }
+
+  function setBalanceStat(labelEl,valueEl,net){
+    if(net===null){
+      labelEl.textContent='Odhadovaná bilance';
+      valueEl.textContent='—';
+      valueEl.className='';
+      return;
+    }
+    if(net<=0){
+      labelEl.textContent='Odhadovaný deficit';
+      valueEl.textContent=fmtNum(Math.round(Math.abs(net)));
+      valueEl.className='net-neg';
+    }else{
+      labelEl.textContent='Odhadovaný nadbytek';
+      valueEl.textContent=fmtNum(Math.round(net));
+      valueEl.className='net-pos';
+    }
+  }
+
+  function renderWeek(){
+    const entries=weekEntries(), a=aggregate(entries);
+    document.getElementById('weekLabel').textContent=formatWeek(weekAnchor);
+    document.getElementById('weekKcal').textContent=a.avgKcal===null?'—':fmtNum(Math.round(a.avgKcal));
+    document.getElementById('weekProtein').textContent=a.avgProtein===null?'—':fmtNum(a.avgProtein,1);
+    document.getElementById('weekTdee').textContent=fmtNum(app.settings.tdee);
+    document.getElementById('weekProteinTarget').textContent=fmtNum(app.settings.proteinTarget);
+    const pct=a.avgProtein===null?0:Math.min(100,(a.avgProtein/app.settings.proteinTarget)*100);
+    document.getElementById('weekProteinProgress').style.width=`${pct}%`;
+    setBalanceStat(document.getElementById('weekBalanceLabel'),document.getElementById('weekBalance'),a.net);
+
+    const bars=document.getElementById('weekBars');
+    bars.innerHTML='';
+    const max=Math.max(app.settings.tdee*1.25,...entries.map(e=>numeric(e.data?.kcal)||0),1);
+    entries.forEach(e=>{
+      const kcal=numeric(e.data?.kcal);
+      const h=kcal===null?0:Math.max(2,Math.min(100,(kcal/max)*100));
+      const w=document.createElement('div');
+      w.className='bar-wrap';
+      w.innerHTML=`<div class="bar" style="height:${h}%;" title="${kcal===null?'':kcal+' kcal'}"></div><div class="bar-label">${DAY_NAMES[e.date.getDay()]}</div>`;
+      bars.appendChild(w);
+    });
+    const line=document.getElementById('weekTdeeLine');
+    // place line approximately relative to chart max
+    const pctLine=Math.max(0,Math.min(100,(app.settings.tdee/max)*100));
+    line.style.transform=`translateY(${190*(1-pctLine)}px)`;
+    line.querySelector('span').textContent=`TDEE ${fmtNum(app.settings.tdee)} kcal`;
+  }
+
+  function monthEntries(){
+    const y=monthAnchor.getFullYear(), m=monthAnchor.getMonth();
+    const days=new Date(y,m+1,0).getDate(), out=[];
+    for(let i=1;i<=days;i++){
+      const date=new Date(y,m,i), d=app.days[dateKey(date)];
+      if(d && (d.kcal!=='' || d.protein!=='')) out.push({date,data:d});
+    }
+    return out;
+  }
+  function renderMonth(){
+    const entries=monthEntries(), a=aggregate(entries);
+    document.getElementById('monthLabel').textContent=formatMonth(monthAnchor);
+    document.getElementById('monthKcal').textContent=a.avgKcal===null?'—':fmtNum(Math.round(a.avgKcal));
+    document.getElementById('monthProtein').textContent=a.avgProtein===null?'—':fmtNum(a.avgProtein,1);
+    document.getElementById('monthTdee').textContent=fmtNum(app.settings.tdee);
+    document.getElementById('monthProteinTarget').textContent=fmtNum(app.settings.proteinTarget);
+    setBalanceStat(document.getElementById('monthBalanceLabel'),document.getElementById('monthBalance'),a.net);
+
+    const list=document.getElementById('monthList');
+    list.innerHTML='<div class="month-row head"><div>Den</div><div class="r">Kcal</div><div class="r">Bílkoviny</div><div class="r">Bilance</div></div>';
+    if(!entries.length){
+      list.innerHTML += '<div class="notice">V tomto měsíci zatím nejsou žádné záznamy.</div>';
+      return;
+    }
+    entries.forEach(e=>{
+      const k=numeric(e.data.kcal), p=numeric(e.data.protein);
+      let bal='—', cls='';
+      if(k!==null && e.data.kcal!==''){
+        const net=Math.round(k-app.settings.tdee);
+        if(net<0){bal=`−${fmtNum(Math.abs(net))}`;cls='net-neg'}
+        else if(net>0){bal=`+${fmtNum(net)}`;cls='net-pos'}
+        else bal='0';
+      }
+      const row=document.createElement('div');
+      row.className='month-row'+(dateKey(e.date)===dateKey(todayLocal())?' today':'');
+      row.innerHTML=`<div><strong>${DAY_NAMES[e.date.getDay()]} ${e.date.getDate()}. ${e.date.getMonth()+1}.</strong></div>
+        <div class="r">${k===null?'—':fmtNum(k)}</div>
+        <div class="r">${p===null?'—':fmtNum(p,1)}${p===null?'':' g'}</div>
+        <div class="r ${cls}">${bal}</div>`;
+      row.addEventListener('click',()=>{selectedDate=cloneDate(e.date);showMain('day')});
+      list.appendChild(row);
+    });
+  }
+
+  function renderSettings(){
+    document.getElementById('bmrSetting').value=app.settings.bmr;
+    document.getElementById('tdeeSetting').value=app.settings.tdee;
+    document.getElementById('proteinTargetSetting').value=app.settings.proteinTarget;
+
+    const list=document.getElementById('themeList');
+    list.innerHTML='';
+    THEMES.forEach(t=>{
+      const el=document.createElement('div');
+      el.className='theme-option'+(app.settings.theme===t.id?' selected':'');
+      el.innerHTML=`
+        <div class="swatches">${t.colors.map(c=>`<span class="swatch" style="background:${c}"></span>`).join('')}</div>
+        <div><div class="theme-name">${t.name}</div><div class="theme-desc">${t.desc}</div></div>
+        <div class="check">${app.settings.theme===t.id?'✓':'○'}</div>`;
+      el.addEventListener('click',()=>{
+        app.settings.theme=t.id;save();applyTheme();renderSettings();
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function render(){
+    applyTheme();
+    if(!document.getElementById('dayView').classList.contains('hidden')) renderDay();
+    if(!document.getElementById('weekView').classList.contains('hidden')) renderWeek();
+    if(!document.getElementById('monthView').classList.contains('hidden')) renderMonth();
+  }
+
+  function saveSettings(){
+    app.settings.bmr=Math.max(0,Number(document.getElementById('bmrSetting').value)||1562);
+    app.settings.tdee=Math.max(1,Number(document.getElementById('tdeeSetting').value)||1800);
+    app.settings.proteinTarget=Math.max(1,Number(document.getElementById('proteinTargetSetting').value)||100);
+    save();
+  }
+
+  function downloadBlob(filename,text,type){
+    const blob=new Blob([text],{type});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function exportJSON(){
+    const payload={app:'Moj balans',version:1,exportedAt:new Date().toISOString(),data:app};
+    downloadBlob(`moj_balans_zaloha_${dateKey(todayLocal())}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+  }
+
+  async function importJSON(file){
+    try{
+      const text=await file.text(), obj=JSON.parse(text);
+      const data=obj?.data?.days?obj.data:(obj?.days?obj:null);
+      if(!data) throw new Error('Neplatný formát.');
+      if(!confirm('Import nahradí současná data v této aplikaci. Pokračovat?')) return;
+      app=data; save(); load(); applyTheme(); showMain('day'); alert('Záloha byla načtena.');
+    }catch(e){alert('Import se nepodařil: '+e.message)}
+  }
+
+  // Main tabs
+  document.querySelectorAll('#mainTabs .tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const v=btn.dataset.view;
+      if(v==='week') weekAnchor=mondayOf(selectedDate);
+      if(v==='month') monthAnchor=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+      showMain(v);
+    });
+  });
+
+  // Day input
+  document.getElementById('kcalInput').addEventListener('input',e=>{
+    dayData(selectedDate).kcal=e.target.value;save();renderDay();
+  });
+  document.getElementById('proteinInput').addEventListener('input',e=>{
+    dayData(selectedDate).protein=e.target.value;save();
+  });
+  document.getElementById('prevDay').addEventListener('click',()=>{selectedDate=addDays(selectedDate,-1);renderDay()});
+  document.getElementById('nextDay').addEventListener('click',()=>{selectedDate=addDays(selectedDate,1);renderDay()});
+  document.getElementById('todayBtn').addEventListener('click',()=>{selectedDate=todayLocal();renderDay()});
+
+  // Week/month nav
+  document.getElementById('prevWeek').addEventListener('click',()=>{weekAnchor=addDays(weekAnchor,-7);renderWeek()});
+  document.getElementById('nextWeek').addEventListener('click',()=>{weekAnchor=addDays(weekAnchor,7);renderWeek()});
+  document.getElementById('prevMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()-1,1);renderMonth()});
+  document.getElementById('nextMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()+1,1);renderMonth()});
+
+  // Settings
+  document.getElementById('settingsBtn').addEventListener('click',showSettings);
+  document.getElementById('backSettings').addEventListener('click',()=>showMain(lastMainView));
+  ['bmrSetting','tdeeSetting','proteinTargetSetting'].forEach(id=>{
+    document.getElementById(id).addEventListener('change',()=>{saveSettings();renderSettings()});
+  });
+
+  document.getElementById('exportBtn').addEventListener('click',exportJSON);
+  document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change',e=>{
+    if(e.target.files?.[0]) importJSON(e.target.files[0]);
+    e.target.value='';
+  });
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+  }
+
+  load();
+  applyTheme();
+  showMain('day');
+})();
+</script>
+</body>
+</html>
