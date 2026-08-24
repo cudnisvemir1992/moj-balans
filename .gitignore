@@ -1,0 +1,20 @@
+# Moj balans — never commit personal/local data
+
+# App exports / backups
+moj_balans_zaloha_*.json
+exports/
+backups/
+data/
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs and OS/editor clutter
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
