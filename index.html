@@ -181,6 +181,15 @@ button{touch-action:manipulation}
 .theme-name{font-weight:750}
 .theme-desc{font-size:.8rem;color:var(--muted);margin-top:2px}
 .check{font-size:1.2rem;color:var(--accent)}
+.csv-dialog{
+  width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:20px;
+  padding:0;background:var(--card);color:var(--text);box-shadow:0 18px 60px rgba(0,0,0,.18)
+}
+.csv-dialog::backdrop{background:rgba(16,24,32,.42)}
+.csv-dialog-inner{padding:17px}
+.csv-summary{display:grid;gap:7px;margin:12px 0;padding:12px;background:var(--soft2);border-radius:14px}
+.csv-errors{font-size:.82rem;color:var(--warm);line-height:1.45;margin:10px 0 0}
+.csv-dialog-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px}
 .hidden{display:none!important}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .notice{font-size:.82rem;color:var(--muted);margin-top:9px;line-height:1.45}
@@ -367,14 +376,29 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       <div class="actions">
         <button class="btn primary" id="exportBtn">Exportovat data (JSON)</button>
         <button class="btn" id="importBtn">Importovat JSON</button>
+        <button class="btn" id="csvImportBtn">Importovat CSV</button>
       </div>
       <input id="importFile" type="file" accept=".json,application/json" class="hidden">
-      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha.</div>
+      <input id="csvImportFile" type="file" accept=".csv,text/csv" class="hidden">
+      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import očekává sloupce datum;kcal;bilkoviny a před zápisem vždy ukáže kontrolní souhrn.</div>
     </section>
   </section>
 
   <div class="footer">Moj balans · jednoduchý přehled příjmu a bilance</div>
 </main>
+
+  <dialog id="csvDialog" class="csv-dialog">
+    <div class="csv-dialog-inner">
+      <h2 class="section-title">Kontrola CSV importu</h2>
+      <div id="csvSummary" class="csv-summary"></div>
+      <div id="csvErrors" class="csv-errors hidden"></div>
+      <div class="csv-dialog-actions">
+        <button class="btn primary" id="csvAddNewBtn">Přidat jen nové dny</button>
+        <button class="btn" id="csvOverwriteBtn">Přepsat i existující dny</button>
+        <button class="btn soft" id="csvCancelBtn">Zrušit</button>
+      </div>
+    </div>
+  </dialog>
 
 <script>
 (() => {
@@ -674,6 +698,113 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     }catch(e){alert('Import se nepodařil: '+e.message)}
   }
 
+  let pendingCsvImport=null;
+
+  function validIsoDate(value){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [y,m,d]=value.split('-').map(Number);
+    const test=new Date(y,m-1,d);
+    return test.getFullYear()===y && test.getMonth()===m-1 && test.getDate()===d;
+  }
+
+  function parseCsvNumber(value){
+    const v=value.trim();
+    if(v==='') return {ok:true,value:''};
+    if(!/^-?\d+(?:\.\d+)?$/.test(v)) return {ok:false,value:null};
+    const n=Number(v);
+    return Number.isFinite(n) && n>=0 ? {ok:true,value:String(n)} : {ok:false,value:null};
+  }
+
+  function parseBalansCsv(text){
+    const clean=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+    const lines=clean.split('\n').filter((line,i,arr)=>!(line.trim()==='' && i===arr.length-1));
+    if(!lines.length) throw new Error('CSV je prázdné.');
+    const header=lines[0].split(';').map(x=>x.trim().toLowerCase());
+    if(header.length!==3 || header[0]!=='datum' || header[1]!=='kcal' || header[2]!=='bilkoviny'){
+      throw new Error('Hlavička musí být přesně: datum;kcal;bilkoviny');
+    }
+
+    const rows=[], errors=[], seen=new Map();
+    for(let i=1;i<lines.length;i++){
+      const line=lines[i];
+      if(line.trim()==='') continue;
+      const cols=line.split(';').map(x=>x.trim().replace(/^"|"$/g,''));
+      const rowNo=i+1;
+      if(cols.length!==3){errors.push(`Řádek ${rowNo}: očekávám 3 sloupce.`);continue;}
+      const [date,kcalRaw,proteinRaw]=cols;
+      if(!validIsoDate(date)){errors.push(`Řádek ${rowNo}: neplatné datum „${date}“ (YYYY-MM-DD).`);continue;}
+      if(seen.has(date)){
+        errors.push(`Řádek ${rowNo}: datum ${date} je v souboru podruhé (první je řádek ${seen.get(date)}).`);
+        continue;
+      }
+      seen.set(date,rowNo);
+      const kcal=parseCsvNumber(kcalRaw), protein=parseCsvNumber(proteinRaw);
+      if(!kcal.ok){errors.push(`Řádek ${rowNo}: kcal nejsou platné číslo.`);continue;}
+      if(!protein.ok){errors.push(`Řádek ${rowNo}: bílkoviny nejsou platné číslo.`);continue;}
+      rows.push({date,kcal:kcal.value,protein:protein.value});
+    }
+
+    const hasExisting=date=>{
+      const d=app.days[date];
+      return !!d && (d.kcal!=='' || d.protein!=='');
+    };
+    const existing=rows.filter(r=>hasExisting(r.date)).length;
+    return {rows,errors,existing,newCount:rows.length-existing};
+  }
+
+  function showCsvPreview(result){
+    pendingCsvImport=result;
+    const summary=document.getElementById('csvSummary');
+    summary.innerHTML=`<div><strong>Nalezeno platných řádků:</strong> ${result.rows.length}</div>
+      <div><strong>Nové dny:</strong> ${result.newCount}</div>
+      <div><strong>Dny, které už existují:</strong> ${result.existing}</div>
+      <div><strong>Chybné řádky:</strong> ${result.errors.length}</div>`;
+    const errorBox=document.getElementById('csvErrors');
+    if(result.errors.length){
+      const first=result.errors.slice(0,5).map(escHtml).join('<br>');
+      errorBox.innerHTML=`${first}${result.errors.length>5?`<br>… a dalších ${result.errors.length-5}`:''}`;
+      errorBox.classList.remove('hidden');
+    }else{
+      errorBox.textContent='';errorBox.classList.add('hidden');
+    }
+    document.getElementById('csvAddNewBtn').disabled=result.newCount===0;
+    document.getElementById('csvOverwriteBtn').disabled=result.rows.length===0;
+    document.getElementById('csvDialog').showModal();
+  }
+
+  function escHtml(s){
+    return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  }
+
+  function applyCsvImport(mode){
+    if(!pendingCsvImport) return;
+    let added=0,updated=0,skipped=0;
+    for(const row of pendingCsvImport.rows){
+      const current=app.days[row.date];
+      const exists=!!current && (current.kcal!=='' || current.protein!=='');
+      if(mode==='new' && exists){skipped++;continue;}
+      const target=current || {kcal:'',protein:''};
+      if(row.kcal!=='') target.kcal=row.kcal;
+      if(row.protein!=='') target.protein=row.protein;
+      app.days[row.date]=target;
+      if(exists) updated++; else added++;
+    }
+    save();
+    document.getElementById('csvDialog').close();
+    pendingCsvImport=null;
+    render();
+    alert(`CSV import dokončen. Přidáno: ${added}, aktualizováno: ${updated}, přeskočeno: ${skipped}.`);
+  }
+
+  async function importCsvFile(file){
+    try{
+      const result=parseBalansCsv(await file.text());
+      showCsvPreview(result);
+    }catch(e){
+      alert('CSV import se nepodařil: '+e.message);
+    }
+  }
+
   // Main tabs
   document.querySelectorAll('#mainTabs .tab').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -714,6 +845,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     if(e.target.files?.[0]) importJSON(e.target.files[0]);
     e.target.value='';
   });
+  document.getElementById('csvImportBtn').addEventListener('click',()=>document.getElementById('csvImportFile').click());
+  document.getElementById('csvImportFile').addEventListener('change',e=>{
+    if(e.target.files?.[0]) importCsvFile(e.target.files[0]);
+    e.target.value='';
+  });
+  document.getElementById('csvAddNewBtn').addEventListener('click',()=>applyCsvImport('new'));
+  document.getElementById('csvOverwriteBtn').addEventListener('click',()=>applyCsvImport('overwrite'));
+  document.getElementById('csvCancelBtn').addEventListener('click',()=>{pendingCsvImport=null;document.getElementById('csvDialog').close()});
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
