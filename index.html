@@ -279,8 +279,13 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
           <div class="progress"><div id="weekProteinProgress"></div></div>
         </div>
         <div class="stat">
-          <div class="stat-label" id="weekBalanceLabel">Odhadovaný deficit</div>
-          <div class="stat-value"><span id="weekBalance">—</span> <small>kcal</small></div>
+          <div class="stat-label" id="weekAvgBalanceLabel">Průměrný odhadovaný deficit</div>
+          <div class="stat-value"><span id="weekAvgBalance">—</span> <small>kcal / den</small></div>
+          <div class="stat-note" id="weekAvgBalanceNote">jen ze dnů se zadanými kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" id="weekTotalBalanceLabel">Celkový odhadovaný deficit</div>
+          <div class="stat-value"><span id="weekTotalBalance">—</span> <small>kcal</small></div>
           <div class="stat-note">za zapsané dny tohoto týdne</div>
         </div>
       </div>
@@ -315,8 +320,13 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
           <div class="stat-note">cíl <span id="monthProteinTarget">100</span> g/den</div>
         </div>
         <div class="stat">
-          <div class="stat-label" id="monthBalanceLabel">Odhadovaný deficit</div>
-          <div class="stat-value"><span id="monthBalance">—</span> <small>kcal</small></div>
+          <div class="stat-label" id="monthAvgBalanceLabel">Průměrný odhadovaný deficit</div>
+          <div class="stat-value"><span id="monthAvgBalance">—</span> <small>kcal / den</small></div>
+          <div class="stat-note" id="monthAvgBalanceNote">jen ze dnů se zadanými kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" id="monthTotalBalanceLabel">Celkový odhadovaný deficit</div>
+          <div class="stat-value"><span id="monthTotalBalance">—</span> <small>kcal</small></div>
           <div class="stat-note">za zapsané dny tohoto měsíce</div>
         </div>
       </div>
@@ -549,19 +559,20 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     return {avgKcal,avgProtein,net,kcalCount:kcalVals.length,proteinCount:proteinVals.length};
   }
 
-  function setBalanceStat(labelEl,valueEl,net){
+  function setBalanceStat(labelEl,valueEl,net,mode='total'){
+    const avg = mode==='avg';
     if(net===null){
-      labelEl.textContent='Odhadovaná bilance';
+      labelEl.textContent=avg ? 'Průměrná odhadovaná bilance' : 'Celková odhadovaná bilance';
       valueEl.textContent='—';
       valueEl.className='';
       return;
     }
     if(net<=0){
-      labelEl.textContent='Odhadovaný deficit';
+      labelEl.textContent=avg ? 'Průměrný odhadovaný deficit' : 'Celkový odhadovaný deficit';
       valueEl.textContent=fmtNum(Math.round(Math.abs(net)));
       valueEl.className='net-neg';
     }else{
-      labelEl.textContent='Odhadovaný nadbytek';
+      labelEl.textContent=avg ? 'Průměrný odhadovaný nadbytek' : 'Celkový odhadovaný nadbytek';
       valueEl.textContent=fmtNum(Math.round(net));
       valueEl.className='net-pos';
     }
@@ -576,7 +587,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('weekProteinTarget').textContent=fmtNum(app.settings.proteinTarget);
     const pct=a.avgProtein===null?0:Math.min(100,(a.avgProtein/app.settings.proteinTarget)*100);
     document.getElementById('weekProteinProgress').style.width=`${pct}%`;
-    setBalanceStat(document.getElementById('weekBalanceLabel'),document.getElementById('weekBalance'),a.net);
+    const avgWeekNet=a.net===null?null:a.net/a.kcalCount;
+    setBalanceStat(document.getElementById('weekAvgBalanceLabel'),document.getElementById('weekAvgBalance'),avgWeekNet,'avg');
+    setBalanceStat(document.getElementById('weekTotalBalanceLabel'),document.getElementById('weekTotalBalance'),a.net,'total');
+    document.getElementById('weekAvgBalanceNote').textContent=a.kcalCount
+      ? `počítáno z ${a.kcalCount} zapsaných ${a.kcalCount===1?'dne':'dnů'}`
+      : 'jen ze dnů se zadanými kcal';
 
     const bars=document.getElementById('weekBars');
     bars.innerHTML='';
@@ -612,7 +628,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('monthProtein').textContent=a.avgProtein===null?'—':fmtNum(a.avgProtein,1);
     document.getElementById('monthTdee').textContent=fmtNum(app.settings.tdee);
     document.getElementById('monthProteinTarget').textContent=fmtNum(app.settings.proteinTarget);
-    setBalanceStat(document.getElementById('monthBalanceLabel'),document.getElementById('monthBalance'),a.net);
+    const avgMonthNet=a.net===null?null:a.net/a.kcalCount;
+    setBalanceStat(document.getElementById('monthAvgBalanceLabel'),document.getElementById('monthAvgBalance'),avgMonthNet,'avg');
+    setBalanceStat(document.getElementById('monthTotalBalanceLabel'),document.getElementById('monthTotalBalance'),a.net,'total');
+    document.getElementById('monthAvgBalanceNote').textContent=a.kcalCount
+      ? `počítáno z ${a.kcalCount} zapsaných ${a.kcalCount===1?'dne':'dnů'}`
+      : 'jen ze dnů se zadanými kcal';
 
     const list=document.getElementById('monthList');
     list.innerHTML='<div class="month-row head"><div>Den</div><div class="r">Kcal</div><div class="r">Bílkoviny</div><div class="r">Bilance</div></div>';
