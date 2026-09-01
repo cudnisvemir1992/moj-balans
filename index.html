@@ -68,6 +68,17 @@ html[data-theme="candy"]{
   --shadow:0 7px 26px rgba(139,67,109,.07);
 }
 
+html[data-theme="sea"]{
+  --bg:#F2F6FD;
+  --card:#FFFFFF;
+  --soft:#EAF1FB;
+  --text:#1E3765;
+  --muted:#6F83A3;
+  --accent:#4A7FE8;
+  --accent-2:#7FA7F2;
+  --accent-soft:#DCE8FC;
+}
+
 *{box-sizing:border-box}
 html{background:var(--bg); color-scheme:light}
 body{
@@ -412,7 +423,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   const THEMES = [
     {id:'green', name:'Zelené', desc:'Současný klidný vzhled', colors:['#4f8a5b','#edf6ee','#ffffff']},
     {id:'rainbow', name:'Duha', desc:'Výrazné barevné akcenty', colors:['#6d5bd0','#2f94c8','#3c8d77','#d8845a']},
-    {id:'candy', name:'Bonbon', desc:'Malinová, modrá, fialová a žlutá', colors:['#d64b8c','#4d7fe8','#7a5be8','#f0b83f']}
+    {id:'candy', name:'Bonbon', desc:'Malinová, modrá, fialová a žlutá', colors:['#d64b8c','#4d7fe8','#7a5be8','#f0b83f']},
+    {id:'sea', name:'Moře', desc:'Klidné světle modré mořské tóny', colors:['#4A7FE8','#7FA7F2','#DCE8FC','#FFFFFF']}
   ];
 
   const DAY_NAMES = ['Ne','Po','Út','St','Čt','Pá','So'];
