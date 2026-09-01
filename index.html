@@ -14,65 +14,58 @@
 
 <style>
 :root{
-  --bg:#f5f9fd;
+  --bg:#f6f7f4;
   --card:#ffffff;
-  --soft:#eaf3fb;
-  --soft2:#f4f8fc;
-  --text:#18212b;
-  --muted:#677586;
-  --line:#d8e4ef;
-  --accent:#2f78bd;
-  --accent-2:#5e9bd1;
-  --accent-soft:#e3f0fb;
-  --positive:#3e7d67;
-  --positive-soft:#e7f3ee;
-  --warm:#9a7440;
-  --warm-soft:#f7efe4;
-  --shadow:0 7px 26px rgba(31,70,110,.07);
+  --soft:#f0f2ef;
+  --soft2:#f7f8f6;
+  --text:#1f2420;
+  --muted:#6c746e;
+  --line:#dfe4df;
+  --accent:#4f8a5b;
+  --accent-2:#7ba984;
+  --accent-soft:#edf6ee;
+  --positive:#4f8a5b;
+  --positive-soft:#edf6ee;
+  --warm:#a07812;
+  --warm-soft:#fff7db;
+  --shadow:0 7px 26px rgba(55,85,60,.06);
   --radius:22px;
 }
 
-html[data-theme="green"]{
-  --bg:#f6f7f4; --card:#ffffff; --soft:#eef2ed; --soft2:#f7f8f6;
-  --text:#1f2420; --muted:#6c746e; --line:#dfe4df;
-  --accent:#4f8a5b; --accent-2:#7ba984; --accent-soft:#edf6ee;
-  --positive:#4f8a5b; --positive-soft:#edf6ee; --warm:#8c741f; --warm-soft:#fff7db;
-  --shadow:0 7px 26px rgba(55,85,60,.06);
-}
-html[data-theme="neutral"]{
-  --bg:#f5f5f4; --card:#ffffff; --soft:#eeeeec; --soft2:#f8f8f7;
-  --text:#242424; --muted:#737373; --line:#dededb;
-  --accent:#656b73; --accent-2:#8a9097; --accent-soft:#eceef0;
-  --positive:#66776d; --positive-soft:#edf2ef; --warm:#8a765c; --warm-soft:#f5f0e9;
-  --shadow:0 7px 26px rgba(0,0,0,.05);
-}
-html[data-theme="darkblue"]{
-  --bg:#eef2f7; --card:#ffffff; --soft:#e2e9f1; --soft2:#f6f8fb;
-  --text:#132033; --muted:#617086; --line:#d3dce7;
-  --accent:#173e69; --accent-2:#35658f; --accent-soft:#e0ebf5;
-  --positive:#416b63; --positive-soft:#e5efed; --warm:#876f50; --warm-soft:#f3ede6;
-  --shadow:0 7px 26px rgba(17,48,82,.08);
-}
 html[data-theme="rainbow"]{
-  --bg:#fbf8ff; --card:#ffffff; --soft:#f3effb; --soft2:#fffaf4;
-  --text:#242038; --muted:#726c82; --line:#e4dff0;
-  --accent:#6d5bd0; --accent-2:#2f94c8; --accent-soft:#eeeaff;
-  --positive:#3c8d77; --positive-soft:#e4f5ef; --warm:#d8845a; --warm-soft:#fff0e8;
+  --bg:#fbf8ff;
+  --card:#ffffff;
+  --soft:#f1ecfb;
+  --soft2:#fffaf4;
+  --text:#242038;
+  --muted:#726c82;
+  --line:#dfd7ef;
+  --accent:#6d5bd0;
+  --accent-2:#2f94c8;
+  --accent-soft:#eeeaff;
+  --positive:#3c8d77;
+  --positive-soft:#e4f5ef;
+  --warm:#d8845a;
+  --warm-soft:#fff0e8;
   --shadow:0 7px 26px rgba(81,61,148,.07);
 }
-html[data-theme="pastel"]{
-  --bg:#fff9fb; --card:#ffffff; --soft:#f6eef7; --soft2:#fffaf4;
-  --text:#302739; --muted:#796f80; --line:#eadfea;
-  --accent:#7f70ba; --accent-2:#91a9d2; --accent-soft:#f0ecfb;
-  --positive:#6f9c86; --positive-soft:#edf7f1; --warm:#c49170; --warm-soft:#fbf0e8;
-  --shadow:0 7px 26px rgba(99,80,125,.06);
-}
-html[data-theme="sea"]{
-  --bg:#f2fafb; --card:#ffffff; --soft:#e6f4f5; --soft2:#f5fbfb;
-  --text:#173036; --muted:#637a80; --line:#d5e9eb;
-  --accent:#2e8295; --accent-2:#55a5a2; --accent-soft:#e3f3f4;
-  --positive:#4f8b76; --positive-soft:#e7f5ef; --warm:#8c7b55; --warm-soft:#f5f0e4;
-  --shadow:0 7px 26px rgba(42,111,122,.07);
+
+html[data-theme="candy"]{
+  --bg:#fff8fc;
+  --card:#ffffff;
+  --soft:#f8eaf2;
+  --soft2:#fff9fc;
+  --text:#302235;
+  --muted:#7b6676;
+  --line:#efd8e5;
+  --accent:#d64b8c;
+  --accent-2:#4d7fe8;
+  --accent-soft:#fde8f2;
+  --positive:#7a5be8;
+  --positive-soft:#eee9ff;
+  --warm:#d99a18;
+  --warm-soft:#fff2c9;
+  --shadow:0 7px 26px rgba(139,67,109,.07);
 }
 
 *{box-sizing:border-box}
@@ -417,20 +410,16 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   const STORAGE_KEY = 'moj_balans_v1';
 
   const THEMES = [
-    {id:'blue', name:'Modré', desc:'Výchozí klidné modré tóny', colors:['#2f78bd','#dfeefa','#ffffff']},
-    {id:'green', name:'Zelené', desc:'Sesterské téma k Moj ritam', colors:['#4f8a5b','#edf6ee','#ffffff']},
-    {id:'neutral', name:'Neutrální', desc:'Minimalistické šedé tóny', colors:['#656b73','#eeeeec','#ffffff']},
-    {id:'darkblue', name:'Tmavě modré', desc:'Hlubší elegantní modré', colors:['#173e69','#e0ebf5','#ffffff']},
-    {id:'rainbow', name:'Duha', desc:'Veselé barevné akcenty', colors:['#6d5bd0','#2f94c8','#3c8d77','#d8845a']},
-    {id:'pastel', name:'Pastel mix', desc:'Jemná směs modré, fialové a růžové', colors:['#7f70ba','#91a9d2','#e8b7c9']},
-    {id:'sea', name:'Moře', desc:'Modrá, tyrkysová a zelená', colors:['#2e8295','#55a5a2','#8bc7b0']}
+    {id:'green', name:'Zelené', desc:'Současný klidný vzhled', colors:['#4f8a5b','#edf6ee','#ffffff']},
+    {id:'rainbow', name:'Duha', desc:'Výrazné barevné akcenty', colors:['#6d5bd0','#2f94c8','#3c8d77','#d8845a']},
+    {id:'candy', name:'Bonbon', desc:'Malinová, modrá, fialová a žlutá', colors:['#d64b8c','#4d7fe8','#7a5be8','#f0b83f']}
   ];
 
   const DAY_NAMES = ['Ne','Po','Út','St','Čt','Pá','So'];
   const MONTH_NAMES = ['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
 
   let app = {
-    settings:{bmr:1562,tdee:1800,proteinTarget:100,theme:'blue'},
+    settings:{bmr:1562,tdee:1800,proteinTarget:100,theme:'green'},
     days:{}
   };
 
@@ -476,16 +465,16 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       bmr:Number(app.settings?.bmr)||1562,
       tdee:Number(app.settings?.tdee)||1800,
       proteinTarget:Number(app.settings?.proteinTarget)||100,
-      theme:THEMES.some(t=>t.id===app.settings?.theme)?app.settings.theme:'blue'
+      theme:THEMES.some(t=>t.id===app.settings?.theme)?app.settings.theme:'green'
     };
   }
   function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(app))}
 
   function applyTheme(){
-    const t=app.settings.theme || 'blue';
-    document.documentElement.dataset.theme=t==='blue'?'':t;
-    if(t==='blue') document.documentElement.removeAttribute('data-theme');
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#eef5fb';
+    const t=THEMES.some(x=>x.id===app.settings.theme)?app.settings.theme:'green';
+    if(t==='green') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.dataset.theme=t;
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f6f7f4';
     document.getElementById('themeColorMeta').setAttribute('content',color);
   }
 
