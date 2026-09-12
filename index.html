@@ -392,9 +392,24 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
         <button class="btn" id="importBtn">Importovat JSON</button>
         <button class="btn" id="csvImportBtn">Importovat CSV</button>
       </div>
+
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+        <div class="metric-name">Export CSV za období</div>
+        <div class="metric-sub">Vyber první a poslední den exportu.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;">
+          <label class="notice" style="margin-top:0;">Od
+            <input id="csvFrom" type="date" style="width:100%;min-height:44px;margin-top:4px;border:1px solid var(--line);border-radius:13px;padding:8px 10px;background:white;color:var(--text);">
+          </label>
+          <label class="notice" style="margin-top:0;">Do
+            <input id="csvTo" type="date" style="width:100%;min-height:44px;margin-top:4px;border:1px solid var(--line);border-radius:13px;padding:8px 10px;background:white;color:var(--text);">
+          </label>
+        </div>
+        <button class="btn" id="csvExportBtn" style="width:100%;margin-top:9px;">Exportovat CSV</button>
+      </div>
+
       <input id="importFile" type="file" accept=".json,application/json" class="hidden">
       <input id="csvImportFile" type="file" accept=".csv,text/csv" class="hidden">
-      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import očekává sloupce datum;kcal;bilkoviny a před zápisem vždy ukáže kontrolní souhrn.</div>
+      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.</div>
     </section>
   </section>
 
@@ -444,6 +459,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   function cloneDate(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
   function todayLocal(){return cloneDate(new Date())}
   function dateKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+  function parseDateKey(key){const [y,m,d]=String(key).split('-').map(Number);return new Date(y,m-1,d)}
   function addDays(d,n){const x=cloneDate(d);x.setDate(x.getDate()+n);return x}
   function mondayOf(date){
     const d=cloneDate(date), day=d.getDay(), delta=day===0?-6:1-day;
@@ -508,6 +524,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('settingsView').classList.remove('hidden');
     document.getElementById('mainTabs').classList.add('hidden');
     renderSettings();
+
+    const csvFrom=document.getElementById('csvFrom');
+    const csvTo=document.getElementById('csvTo');
+    const monday=mondayOf(selectedDate);
+    if(!csvFrom.value) csvFrom.value=dateKey(monday);
+    if(!csvTo.value) csvTo.value=dateKey(addDays(monday,6));
   }
 
   function renderDay(){
@@ -555,7 +577,6 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     }
     const avgKcal=kcalVals.length?kcalVals.reduce((a,b)=>a+b,0)/kcalVals.length:null;
     const avgProtein=proteinVals.length?proteinVals.reduce((a,b)=>a+b,0)/proteinVals.length:null;
-    // Net energy balance only for days with entered kcal.
     const net=kcalVals.length?kcalVals.reduce((sum,k)=>sum+(k-app.settings.tdee),0):null;
     return {avgKcal,avgProtein,net,kcalCount:kcalVals.length,proteinCount:proteinVals.length};
   }
@@ -607,7 +628,6 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       bars.appendChild(w);
     });
     const line=document.getElementById('weekTdeeLine');
-    // place line approximately relative to chart max
     const pctLine=Math.max(0,Math.min(100,(app.settings.tdee/max)*100));
     line.style.transform=`translateY(${190*(1-pctLine)}px)`;
     line.querySelector('span').textContent=`TDEE ${fmtNum(app.settings.tdee)} kcal`;
@@ -703,6 +723,38 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const a=document.createElement('a');a.href=url;a.download=filename;
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function csvEscape(v){
+    const s=String(v ?? '');
+    return /[;"\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }
+
+  function exportCSV(){
+    const fromRaw=document.getElementById('csvFrom').value;
+    const toRaw=document.getElementById('csvTo').value;
+    if(!validIsoDate(fromRaw) || !validIsoDate(toRaw)){
+      alert('Vyber platné datum Od i Do.');
+      return;
+    }
+    const from=parseDateKey(fromRaw);
+    const to=parseDateKey(toRaw);
+    if(from>to){
+      alert('Datum Od nesmí být později než datum Do.');
+      return;
+    }
+
+    const rows=[['datum','kcal','bilkoviny']];
+    let dt=cloneDate(from);
+    while(dt<=to){
+      const key=dateKey(dt);
+      const d=app.days[key] || {kcal:'',protein:''};
+      rows.push([key,d.kcal ?? '',d.protein ?? '']);
+      dt=addDays(dt,1);
+    }
+
+    const csv='\ufeff'+rows.map(r=>r.map(csvEscape).join(';')).join('\n');
+    downloadBlob(`moj_balans_${fromRaw}_${toRaw}.csv`,csv,'text/csv;charset=utf-8');
   }
 
   function exportJSON(){
@@ -827,7 +879,6 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     }
   }
 
-  // Main tabs
   document.querySelectorAll('#mainTabs .tab').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const v=btn.dataset.view;
@@ -837,7 +888,6 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     });
   });
 
-  // Day input
   document.getElementById('kcalInput').addEventListener('input',e=>{
     dayData(selectedDate).kcal=e.target.value;save();renderDay();
   });
@@ -848,13 +898,11 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   document.getElementById('nextDay').addEventListener('click',()=>{selectedDate=addDays(selectedDate,1);renderDay()});
   document.getElementById('todayBtn').addEventListener('click',()=>{selectedDate=todayLocal();renderDay()});
 
-  // Week/month nav
   document.getElementById('prevWeek').addEventListener('click',()=>{weekAnchor=addDays(weekAnchor,-7);renderWeek()});
   document.getElementById('nextWeek').addEventListener('click',()=>{weekAnchor=addDays(weekAnchor,7);renderWeek()});
   document.getElementById('prevMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()-1,1);renderMonth()});
   document.getElementById('nextMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()+1,1);renderMonth()});
 
-  // Settings
   document.getElementById('settingsBtn').addEventListener('click',showSettings);
   document.getElementById('backSettings').addEventListener('click',()=>showMain(lastMainView));
   ['bmrSetting','tdeeSetting','proteinTargetSetting'].forEach(id=>{
@@ -862,6 +910,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   });
 
   document.getElementById('exportBtn').addEventListener('click',exportJSON);
+  document.getElementById('csvExportBtn').addEventListener('click',exportCSV);
   document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change',e=>{
     if(e.target.files?.[0]) importJSON(e.target.files[0]);
