@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#eef5fb" id="themeColorMeta">
+  <meta name="theme-color" content="#f6f7f4" id="themeColorMeta">
   <meta name="description" content="Moj balans – jednoduchý přehled kcal, bílkovin a energetické bilance.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Moj balans">
@@ -197,6 +197,7 @@ button{touch-action:manipulation}
 .hidden{display:none!important}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .notice{font-size:.82rem;color:var(--muted);margin-top:9px;line-height:1.45}
+.notice.warn{color:var(--warm)}
 .footer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:17px}
 hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 @media(max-width:520px){
@@ -412,7 +413,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
       <input id="importFile" type="file" accept=".json,application/json" class="hidden">
       <input id="csvImportFile" type="file" accept=".csv,text/csv" class="hidden">
-      <div class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.</div>
+      <div id="storageNotice" class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.</div>
     </section>
   </section>
 
@@ -437,6 +438,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   'use strict';
 
   const STORAGE_KEY = 'moj_balans_v1';
+  let storageOK = true;
 
   const THEMES = [
     {id:'green', name:'Zelené', desc:'Současný klidný vzhled', colors:['#4f8a5b','#edf6ee','#ffffff']},
@@ -491,7 +493,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
         const parsed=JSON.parse(raw);
         if(parsed && parsed.days && parsed.settings) app=parsed;
       }
-    }catch(e){}
+      localStorage.setItem(STORAGE_KEY+'_test','1');
+      localStorage.removeItem(STORAGE_KEY+'_test');
+      storageOK=true;
+    }catch(e){
+      storageOK=false;
+    }
     app.settings = {
       bmr:Number(app.settings?.bmr)||1562,
       tdee:Number(app.settings?.tdee)||1800,
@@ -499,7 +506,26 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       theme:THEMES.some(t=>t.id===app.settings?.theme)?app.settings.theme:'green'
     };
   }
-  function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(app))}
+  function save(){
+    if(!storageOK) return;
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(app));
+    }catch(e){
+      storageOK=false;
+      renderStorageNotice();
+    }
+  }
+
+  function renderStorageNotice(){
+    const notice=document.getElementById('storageNotice');
+    if(storageOK){
+      notice.className='notice';
+      notice.textContent='Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.';
+    }else{
+      notice.className='notice warn';
+      notice.textContent='Prohlížeč nepovolil spolehlivé trvalé úložiště. Aplikace funguje dál, ale změny se nemusí uložit; použij JSON zálohu.';
+    }
+  }
 
   function applyTheme(){
     const t=THEMES.some(x=>x.id===app.settings.theme)?app.settings.theme:'green';
@@ -955,6 +981,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   });
 
   load();
+  renderStorageNotice();
   applyTheme();
   showMain('day');
 })();
