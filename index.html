@@ -30,7 +30,7 @@
   --warm-soft:#fff7db;
   --shadow:0 7px 26px rgba(55,85,60,.06);
   --input-bg:#ffffff;
-  --on-accent:#ffffff;
+  --on-accent:#071009;
   --radius:22px;
 }
 
@@ -50,6 +50,7 @@ html[data-theme="rainbow"]{
   --warm:#d8845a;
   --warm-soft:#fff0e8;
   --shadow:0 7px 26px rgba(81,61,148,.07);
+  --on-accent:#ffffff;
 }
 
 html[data-theme="candy"]{
@@ -68,17 +69,27 @@ html[data-theme="candy"]{
   --warm:#d99a18;
   --warm-soft:#fff2c9;
   --shadow:0 7px 26px rgba(139,67,109,.07);
+  --on-accent:#1f0c16;
 }
 
 html[data-theme="sea"]{
   --bg:#F2F6FD;
   --card:#FFFFFF;
   --soft:#EAF1FB;
+  --soft2:#F7FAFF;
   --text:#1E3765;
   --muted:#6F83A3;
+  --line:#D3E0F3;
   --accent:#4A7FE8;
   --accent-2:#7FA7F2;
   --accent-soft:#DCE8FC;
+  --positive:#3C8D77;
+  --positive-soft:#E4F5EF;
+  --warm:#B06B42;
+  --warm-soft:#FFF0E8;
+  --shadow:0 7px 26px rgba(49,79,128,.07);
+  --input-bg:#FFFFFF;
+  --on-accent:#101824;
 }
 
 @media screen and (prefers-color-scheme: dark){
@@ -173,7 +184,7 @@ button,input{font:inherit}
 button{touch-action:manipulation}
 .wrap{width:min(780px,100%);margin:0 auto;padding:14px 14px 54px}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-.brand{font-size:1.55rem;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.brand{margin:0;font-size:1.55rem;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
 .iconbtn,.btn{
   border:1px solid var(--line);background:var(--card);color:var(--text);
   border-radius:14px;min-height:44px;padding:9px 12px
@@ -244,6 +255,7 @@ button{touch-action:manipulation}
   display:grid;grid-template-columns:86px 1fr 1fr 1fr;gap:8px;padding:10px 9px;
   border-radius:13px;align-items:center;font-size:.88rem
 }
+.month-row.entry{width:100%;border:0;background:transparent;color:var(--text);text-align:left;cursor:pointer}
 .month-row:nth-child(odd){background:var(--soft2)}
 .month-row.head{font-size:.76rem;color:var(--muted);background:transparent;padding-top:0}
 .month-row.today{background:var(--accent-soft)}
@@ -258,14 +270,16 @@ button{touch-action:manipulation}
 .theme-list{display:grid;gap:9px}
 .theme-option{
   display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
-  border:1px solid var(--line);border-radius:15px;padding:12px;background:var(--card);cursor:pointer
+  width:100%;border:1px solid var(--line);border-radius:15px;padding:12px;background:var(--card);
+  color:var(--text);text-align:left;cursor:pointer
 }
 .theme-option.selected{outline:2px solid var(--accent);outline-offset:-2px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-offset:2px}
 .swatches{display:flex}
 .swatch{width:25px;height:25px;border-radius:50%;border:2px solid var(--card);margin-left:-6px;box-shadow:0 0 0 1px rgba(0,0,0,.05)}
 .swatch:first-child{margin-left:0}
-.theme-name{font-weight:750}
-.theme-desc{font-size:.8rem;color:var(--muted);margin-top:2px}
+.theme-name{display:block;font-weight:750}
+.theme-desc{display:block;font-size:.8rem;color:var(--muted);margin-top:2px}
 .check{font-size:1.2rem;color:var(--accent)}
 .csv-dialog{
   width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:20px;
@@ -294,24 +308,24 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 <body>
 <main class="wrap">
   <header class="topbar">
-    <div class="brand">Moj balans</div>
+    <h1 class="brand">Moj balans</h1>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn soft hidden" id="installBtn" type="button">Nainstalovat</button>
-      <button class="iconbtn" id="settingsBtn" aria-label="Nastavení">⚙</button>
+      <button class="iconbtn" id="settingsBtn" type="button" aria-label="Nastavení">⚙</button>
     </div>
   </header>
 
-  <nav class="tabs" id="mainTabs">
-    <button class="tab active" data-view="day">Den</button>
-    <button class="tab" data-view="week">Týden</button>
-    <button class="tab" data-view="month">Měsíc</button>
+  <nav class="tabs" id="mainTabs" aria-label="Hlavní přehled">
+    <button class="tab active" type="button" data-view="day" aria-pressed="true">Den</button>
+    <button class="tab" type="button" data-view="week" aria-pressed="false">Týden</button>
+    <button class="tab" type="button" data-view="month" aria-pressed="false">Měsíc</button>
   </nav>
 
   <section id="dayView">
     <div class="navline">
-      <button class="iconbtn" id="prevDay">‹</button>
+      <button class="iconbtn" id="prevDay" type="button" aria-label="Předchozí den">‹</button>
       <div class="label" id="dayLabel"></div>
-      <button class="iconbtn" id="nextDay">›</button>
+      <button class="iconbtn" id="nextDay" type="button" aria-label="Následující den">›</button>
     </div>
 
     <section class="card">
@@ -321,7 +335,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
           <div class="metric-name">Kcal</div>
           <div class="metric-sub">Skutečný denní příjem</div>
         </div>
-        <input id="kcalInput" class="num-input" type="number" min="0" inputmode="numeric" placeholder="např. 1580">
+        <input id="kcalInput" class="num-input" type="number" min="0" inputmode="numeric" placeholder="např. 1580" aria-label="Kcal">
         <div class="unit">kcal</div>
       </div>
       <div class="input-row">
@@ -329,14 +343,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
           <div class="metric-name">Bílkoviny</div>
           <div class="metric-sub">Celkem za den</div>
         </div>
-        <input id="proteinInput" class="num-input" type="number" min="0" inputmode="decimal" step="0.1" placeholder="např. 101">
+        <input id="proteinInput" class="num-input" type="number" min="0" inputmode="decimal" step="0.1" placeholder="např. 101" aria-label="Bílkoviny">
         <div class="unit">g</div>
       </div>
     </section>
 
     <section class="card balance-card">
       <div class="balance-title">Odhadovaná bilance vůči TDEE</div>
-      <div id="dayBalance" class="balance-number">—</div>
+      <div id="dayBalance" class="balance-number" aria-live="polite">—</div>
       <div><span class="tdee-strong">TDEE <span id="dayTdee">1800</span> kcal</span> <span class="work-est">· pracovní odhad</span></div>
     </section>
 
@@ -344,14 +358,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       Dlouhodobě malé volby = velký posun.
     </section>
 
-    <button class="btn primary full" id="todayBtn">Dnešek</button>
+    <button class="btn primary full" id="todayBtn" type="button">Dnešek</button>
   </section>
 
   <section id="weekView" class="hidden">
     <div class="navline">
-      <button class="iconbtn" id="prevWeek">‹</button>
+      <button class="iconbtn" id="prevWeek" type="button" aria-label="Předchozí týden">‹</button>
       <div class="label" id="weekLabel"></div>
-      <button class="iconbtn" id="nextWeek">›</button>
+      <button class="iconbtn" id="nextWeek" type="button" aria-label="Následující týden">›</button>
     </div>
 
     <section class="card">
@@ -391,9 +405,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   <section id="monthView" class="hidden">
     <div class="navline">
-      <button class="iconbtn" id="prevMonth">‹</button>
+      <button class="iconbtn" id="prevMonth" type="button" aria-label="Předchozí měsíc">‹</button>
       <div class="label" id="monthLabel"></div>
-      <button class="iconbtn" id="nextMonth">›</button>
+      <button class="iconbtn" id="nextMonth" type="button" aria-label="Následující měsíc">›</button>
     </div>
 
     <section class="card">
@@ -430,7 +444,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   <section id="settingsView" class="hidden">
     <div class="navline">
-      <button class="iconbtn" id="backSettings">‹</button>
+      <button class="iconbtn" id="backSettings" type="button" aria-label="Zpět">‹</button>
       <div class="label">Nastavení</div>
       <span></span>
     </div>
@@ -495,16 +509,16 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
       <input id="importFile" type="file" accept=".json,application/json" class="hidden">
       <input id="csvImportFile" type="file" accept=".csv,text/csv" class="hidden">
-      <div id="storageNotice" class="notice">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.</div>
+      <div id="storageNotice" class="notice" aria-live="polite">Data se ukládají lokálně v tomto prohlížeči. JSON je přenosná záloha. CSV import i export používají sloupce datum;kcal;bilkoviny.</div>
     </section>
   </section>
 
   <div class="footer">Moj balans · jednoduchý přehled příjmu a bilance</div>
 </main>
 
-  <dialog id="csvDialog" class="csv-dialog">
+  <dialog id="csvDialog" class="csv-dialog" aria-labelledby="csvDialogTitle">
     <div class="csv-dialog-inner">
-      <h2 class="section-title">Kontrola CSV importu</h2>
+      <h2 class="section-title" id="csvDialogTitle">Kontrola CSV importu</h2>
       <div id="csvSummary" class="csv-summary"></div>
       <div id="csvErrors" class="csv-errors hidden"></div>
       <div class="csv-dialog-actions">
@@ -619,7 +633,11 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   function showMain(view){
     lastMainView=view;
-    document.querySelectorAll('#mainTabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+    document.querySelectorAll('#mainTabs .tab').forEach(b=>{
+      const active=b.dataset.view===view;
+      b.classList.toggle('active',active);
+      b.setAttribute('aria-pressed',String(active));
+    });
     document.getElementById('dayView').classList.toggle('hidden',view!=='day');
     document.getElementById('weekView').classList.toggle('hidden',view!=='week');
     document.getElementById('monthView').classList.toggle('hidden',view!=='month');
@@ -782,12 +800,13 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
         else if(net>0){bal=`+${fmtNum(net)}`;cls='net-pos'}
         else bal='0';
       }
-      const row=document.createElement('div');
-      row.className='month-row'+(dateKey(e.date)===dateKey(todayLocal())?' today':'');
-      row.innerHTML=`<div><strong>${DAY_NAMES[e.date.getDay()]} ${e.date.getDate()}. ${e.date.getMonth()+1}.</strong></div>
-        <div class="r">${k===null?'—':fmtNum(k)}</div>
-        <div class="r">${p===null?'—':fmtNum(p,1)}${p===null?'':' g'}</div>
-        <div class="r ${cls}">${bal}</div>`;
+      const row=document.createElement('button');
+      row.type='button';
+      row.className='month-row entry'+(dateKey(e.date)===dateKey(todayLocal())?' today':'');
+      row.innerHTML=`<span><strong>${DAY_NAMES[e.date.getDay()]} ${e.date.getDate()}. ${e.date.getMonth()+1}.</strong></span>
+        <span class="r">${k===null?'—':fmtNum(k)}</span>
+        <span class="r">${p===null?'—':fmtNum(p,1)}${p===null?'':' g'}</span>
+        <span class="r ${cls}">${bal}</span>`;
       row.addEventListener('click',()=>{selectedDate=cloneDate(e.date);showMain('day')});
       list.appendChild(row);
     });
@@ -801,12 +820,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const list=document.getElementById('themeList');
     list.innerHTML='';
     THEMES.forEach(t=>{
-      const el=document.createElement('div');
+      const el=document.createElement('button');
+      el.type='button';
       el.className='theme-option'+(app.settings.theme===t.id?' selected':'');
+      el.setAttribute('aria-pressed',String(app.settings.theme===t.id));
       el.innerHTML=`
-        <div class="swatches">${t.colors.map(c=>`<span class="swatch" style="background:${c}"></span>`).join('')}</div>
-        <div><div class="theme-name">${t.name}</div><div class="theme-desc">${t.desc}</div></div>
-        <div class="check">${app.settings.theme===t.id?'✓':'○'}</div>`;
+        <span class="swatches" aria-hidden="true">${t.colors.map(c=>`<span class="swatch" style="background:${c}"></span>`).join('')}</span>
+        <span><span class="theme-name">${t.name}</span><span class="theme-desc">${t.desc}</span></span>
+        <span class="check" aria-hidden="true">${app.settings.theme===t.id?'✓':'○'}</span>`;
       el.addEventListener('click',()=>{
         app.settings.theme=t.id;save();applyTheme();renderSettings();
       });
@@ -893,7 +914,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   }
 
   function parseCsvNumber(value){
-    const v=value.trim();
+    const v=value.trim().replace(',','.');
     if(v==='') return {ok:true,value:''};
     if(!/^-?\d+(?:\.\d+)?$/.test(v)) return {ok:false,value:null};
     const n=Number(v);
