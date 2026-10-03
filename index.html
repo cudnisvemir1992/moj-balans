@@ -312,6 +312,18 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-o
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .notice{font-size:.82rem;color:var(--muted);margin-top:9px;line-height:1.45}
 .notice.warn{color:var(--warm)}
+.data-completeness{
+  margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;
+  background:var(--warm-soft);font-size:.88rem;line-height:1.4
+}
+.data-completeness.complete{background:var(--positive-soft)}
+.data-completeness details{margin:0;padding:0;border:0}
+.data-completeness summary{cursor:pointer;font-weight:800}
+.data-completeness-list{display:grid;gap:6px;margin:9px 0 0;padding:0;list-style:none}
+.data-completeness-day{
+  width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:11px;
+  background:var(--card);color:var(--text);text-align:left;cursor:pointer
+}
 .footer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:17px}
 hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 @media(max-width:520px){
@@ -339,6 +351,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     <button class="tab" type="button" data-view="week" aria-pressed="false">Týden</button>
     <button class="tab" type="button" data-view="month" aria-pressed="false">Měsíc</button>
   </nav>
+
+  <div id="dataCompleteness" class="data-completeness" aria-live="polite"></div>
 
   <section id="dayView">
     <div class="navline">
@@ -676,6 +690,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('monthView').classList.toggle('hidden',view!=='month');
     document.getElementById('settingsView').classList.add('hidden');
     document.getElementById('mainTabs').classList.remove('hidden');
+    document.getElementById('dataCompleteness').classList.remove('hidden');
     render();
   }
 
@@ -685,6 +700,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('monthView').classList.add('hidden');
     document.getElementById('settingsView').classList.remove('hidden');
     document.getElementById('mainTabs').classList.add('hidden');
+    document.getElementById('dataCompleteness').classList.add('hidden');
     renderSettings();
 
     const csvFrom=document.getElementById('csvFrom');
@@ -870,6 +886,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   function render(){
     applyTheme();
+    renderCompletenessStatus();
     if(!document.getElementById('dayView').classList.contains('hidden')) renderDay();
     if(!document.getElementById('weekView').classList.contains('hidden')) renderWeek();
     if(!document.getElementById('monthView').classList.contains('hidden')) renderMonth();
@@ -899,6 +916,58 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   function csvValueMissing(value){
     return value===null || value===undefined || String(value).trim()==='';
+  }
+
+  function formatDayCount(count){
+    const mod10=count%10, mod100=count%100;
+    if(count===1) return '1 den';
+    if(mod10>=2 && mod10<=4 && (mod100<12 || mod100>14)) return `${count} dny`;
+    return `${count} dní`;
+  }
+
+  function firstBalansDataDate(){
+    const key=Object.keys(app.days || {}).filter(validIsoDate).sort().find(date=>{
+      const d=app.days[date];
+      return !csvValueMissing(d?.kcal) || !csvValueMissing(d?.protein);
+    });
+    return key?parseDateKey(key):null;
+  }
+
+  function renderCompletenessStatus(){
+    const box=document.getElementById('dataCompleteness');
+    const first=firstBalansDataDate();
+    const yesterday=addDays(todayLocal(),-1);
+    const missing=first && first<=yesterday ? missingBalansCsvData(first,yesterday) : [];
+    box.innerHTML='';
+
+    if(!missing.length){
+      box.classList.add('complete');
+      box.textContent='✓ Data do včerejška jsou kompletní';
+      return;
+    }
+
+    box.classList.remove('complete');
+    const details=document.createElement('details');
+    const summary=document.createElement('summary');
+    summary.textContent=`⚠ Chybí data za ${formatDayCount(missing.length)}`;
+    const list=document.createElement('ul');
+    list.className='data-completeness-list';
+    missing.forEach(item=>{
+      const li=document.createElement('li');
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='data-completeness-day';
+      button.textContent=`${item.date.getDate()}. ${item.date.getMonth()+1}. ${item.date.getFullYear()} – ${item.fields.join(' a ')}`;
+      button.addEventListener('click',()=>{
+        selectedDate=cloneDate(item.date);
+        showMain('day');
+        window.scrollTo({top:0,behavior:'smooth'});
+      });
+      li.appendChild(button);
+      list.appendChild(li);
+    });
+    details.append(summary,list);
+    box.appendChild(details);
   }
 
   function missingBalansCsvData(from,to){
@@ -1099,10 +1168,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   });
 
   document.getElementById('kcalInput').addEventListener('input',e=>{
-    dayData(selectedDate).kcal=e.target.value;save();renderDay();
+    dayData(selectedDate).kcal=e.target.value;save();renderDay();renderCompletenessStatus();
   });
   document.getElementById('proteinInput').addEventListener('input',e=>{
-    dayData(selectedDate).protein=e.target.value;save();
+    dayData(selectedDate).protein=e.target.value;save();renderCompletenessStatus();
   });
   document.getElementById('prevDay').addEventListener('click',()=>{selectedDate=addDays(selectedDate,-1);renderDay()});
   document.getElementById('nextDay').addEventListener('click',()=>{selectedDate=addDays(selectedDate,1);renderDay()});
