@@ -194,11 +194,11 @@ button{touch-action:manipulation}
 .btn.soft{background:var(--soft)}
 .btn.full{width:100%}
 .tabs{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
   background:var(--card);padding:5px;border:1px solid var(--line);
   border-radius:16px;box-shadow:var(--shadow);margin-bottom:12px
 }
-.tab{border:0;background:transparent;border-radius:12px;min-height:42px;font-weight:700;color:var(--text)}
+.tab{min-width:0;border:0;background:transparent;border-radius:12px;min-height:42px;padding:6px 4px;font-weight:700;color:var(--text)}
 .tab.active{background:var(--accent);color:var(--on-accent)}
 .navline{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin:4px 0 12px}
 .navline .label{text-align:center;font-weight:750}
@@ -324,6 +324,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-o
   width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:11px;
   background:var(--card);color:var(--text);text-align:left;cursor:pointer
 }
+.custom-range{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.custom-range label{min-width:0;color:var(--muted);font-size:.82rem;font-weight:700}
+.custom-range input{
+  width:100%;min-width:0;min-height:46px;margin-top:5px;padding:9px 10px;border:1px solid var(--line);
+  border-radius:13px;background:var(--input-bg);color:var(--text)
+}
+.custom-days{display:grid;gap:5px;font-size:1.05rem}
+.custom-missing-day{cursor:default}
 .footer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:17px}
 hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 @media(max-width:520px){
@@ -350,6 +358,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     <button class="tab active" type="button" data-view="day" aria-pressed="true">Den</button>
     <button class="tab" type="button" data-view="week" aria-pressed="false">Týden</button>
     <button class="tab" type="button" data-view="month" aria-pressed="false">Měsíc</button>
+    <button class="tab" type="button" data-view="custom" aria-pressed="false">Vlastní</button>
   </nav>
 
   <div id="dataCompleteness" class="data-completeness" aria-live="polite"></div>
@@ -472,6 +481,50 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     <section class="card">
       <h2 class="section-title">Zapsané dny</h2>
       <div class="month-list" id="monthList"></div>
+    </section>
+  </section>
+
+  <section id="customView" class="hidden">
+    <section class="card">
+      <h2 class="section-title">Vlastní období</h2>
+      <div class="custom-range">
+        <label>Od
+          <input id="customFrom" type="date">
+        </label>
+        <label>Do
+          <input id="customTo" type="date">
+        </label>
+      </div>
+      <div id="customRangeError" class="notice warn hidden" role="alert"></div>
+      <div id="customCompleteness" class="data-completeness hidden" aria-live="polite" style="margin-top:12px"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Přehled období</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">Průměr kcal</div>
+          <div class="stat-value"><span id="customKcal">—</span> <small>kcal</small></div>
+          <div class="stat-note" id="customKcalNote">jen ze dnů s platně zadanými kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Průměr bílkovin</div>
+          <div class="stat-value"><span id="customProtein">—</span> <small>g</small></div>
+          <div class="stat-note" id="customProteinNote">jen ze dnů s platně zadanými bílkovinami</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" id="customBalanceLabel">Celková odhadovaná bilance</div>
+          <div class="stat-value"><span id="customBalance">—</span> <small>kcal</small></div>
+          <div class="stat-note" id="customBalanceNote">jen za dny s platně zadanými kcal</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Počet zapsaných dnů</div>
+          <div class="stat-value custom-days">
+            <span>Kcal: <strong id="customKcalCount">—</strong></span>
+            <span>Bílkoviny: <strong id="customProteinCount">—</strong></span>
+          </div>
+        </div>
+      </div>
     </section>
   </section>
 
@@ -601,6 +654,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   let selectedDate = todayLocal();
   let weekAnchor = mondayOf(selectedDate);
   let monthAnchor = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+  let customFrom = '';
+  let customTo = '';
+  let customInitialized = false;
   let lastMainView = 'day';
 
   function pad(n){return String(n).padStart(2,'0')}
@@ -688,9 +744,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('dayView').classList.toggle('hidden',view!=='day');
     document.getElementById('weekView').classList.toggle('hidden',view!=='week');
     document.getElementById('monthView').classList.toggle('hidden',view!=='month');
+    document.getElementById('customView').classList.toggle('hidden',view!=='custom');
     document.getElementById('settingsView').classList.add('hidden');
     document.getElementById('mainTabs').classList.remove('hidden');
-    document.getElementById('dataCompleteness').classList.remove('hidden');
+    document.getElementById('dataCompleteness').classList.toggle('hidden',view==='custom');
     render();
   }
 
@@ -698,6 +755,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('dayView').classList.add('hidden');
     document.getElementById('weekView').classList.add('hidden');
     document.getElementById('monthView').classList.add('hidden');
+    document.getElementById('customView').classList.add('hidden');
     document.getElementById('settingsView').classList.remove('hidden');
     document.getElementById('mainTabs').classList.add('hidden');
     document.getElementById('dataCompleteness').classList.add('hidden');
@@ -757,6 +815,127 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const avgProtein=proteinVals.length?proteinVals.reduce((a,b)=>a+b,0)/proteinVals.length:null;
     const net=kcalVals.length?kcalVals.reduce((sum,k)=>sum+(k-app.settings.tdee),0):null;
     return {avgKcal,avgProtein,net,kcalCount:kcalVals.length,proteinCount:proteinVals.length};
+  }
+
+  function customMetricValue(value){
+    if(csvValueMissing(value)) return null;
+    const parsed=numeric(value);
+    return parsed!==null && parsed>=0 ? parsed : null;
+  }
+
+  function customStats(from,to){
+    let kcalSum=0, proteinSum=0, net=0, kcalCount=0, proteinCount=0, totalDays=0;
+    for(let dt=cloneDate(from);dt<=to;dt=addDays(dt,1)){
+      totalDays++;
+      const d=app.days?.[dateKey(dt)];
+      const kcal=customMetricValue(d?.kcal);
+      const protein=customMetricValue(d?.protein);
+      if(kcal!==null){
+        kcalSum+=kcal;
+        net+=kcal-app.settings.tdee;
+        kcalCount++;
+      }
+      if(protein!==null){
+        proteinSum+=protein;
+        proteinCount++;
+      }
+    }
+    return {
+      avgKcal:kcalCount ? kcalSum/kcalCount : null,
+      avgProtein:proteinCount ? proteinSum/proteinCount : null,
+      net:kcalCount ? net : null,
+      kcalCount,
+      proteinCount,
+      totalDays
+    };
+  }
+
+  function customStatsMissingData(from,to){
+    const first=firstBalansDataDate();
+    if(!first) return [];
+    const yesterday=addDays(todayLocal(),-1);
+    const checkFrom=from>first ? from : first;
+    const checkTo=to<yesterday ? to : yesterday;
+    const missing=[];
+    for(let dt=cloneDate(checkFrom);dt<=checkTo;dt=addDays(dt,1)){
+      const d=app.days?.[dateKey(dt)];
+      const fields=[];
+      if(customMetricValue(d?.kcal)===null) fields.push('kcal');
+      if(customMetricValue(d?.protein)===null) fields.push('bílkoviny');
+      if(fields.length) missing.push({date:cloneDate(dt),fields});
+    }
+    return missing;
+  }
+
+  function renderCustomCompleteness(missing){
+    const box=document.getElementById('customCompleteness');
+    box.innerHTML='';
+    box.classList.toggle('hidden',!missing.length);
+    if(!missing.length) return;
+
+    const details=document.createElement('details');
+    const summary=document.createElement('summary');
+    summary.textContent=`⚠ Chybí údaje za ${formatDayCount(missing.length)}`;
+    const list=document.createElement('ul');
+    list.className='data-completeness-list';
+    missing.forEach(item=>{
+      const li=document.createElement('li');
+      const row=document.createElement('div');
+      row.className='data-completeness-day custom-missing-day';
+      row.textContent=`${item.date.getDate()}. ${item.date.getMonth()+1}. ${item.date.getFullYear()} – ${item.fields.join(', ')}`;
+      li.appendChild(row);
+      list.appendChild(li);
+    });
+    details.append(summary,list);
+    box.appendChild(details);
+  }
+
+  function clearCustomResults(message){
+    document.getElementById('customKcal').textContent='—';
+    document.getElementById('customProtein').textContent='—';
+    setBalanceStat(document.getElementById('customBalanceLabel'),document.getElementById('customBalance'),null,'total');
+    document.getElementById('customKcalCount').textContent='—';
+    document.getElementById('customProteinCount').textContent='—';
+    document.getElementById('customKcalNote').textContent=message;
+    document.getElementById('customProteinNote').textContent=message;
+    document.getElementById('customBalanceNote').textContent=message;
+    renderCustomCompleteness([]);
+  }
+
+  function renderCustom(){
+    const error=document.getElementById('customRangeError');
+    error.classList.add('hidden');
+    if(!validIsoDate(customFrom) || !validIsoDate(customTo)){
+      error.textContent='Vyber platná data Od i Do.';
+      error.classList.remove('hidden');
+      clearCustomResults('Zadej platné období.');
+      return;
+    }
+
+    const from=parseDateKey(customFrom), to=parseDateKey(customTo);
+    if(from>to){
+      error.textContent='Datum Od nesmí být později než datum Do.';
+      error.classList.remove('hidden');
+      clearCustomResults('Zadej platné období.');
+      return;
+    }
+
+    const a=customStats(from,to);
+    document.getElementById('customKcal').textContent=a.avgKcal===null?'—':fmtNum(Math.round(a.avgKcal));
+    document.getElementById('customProtein').textContent=a.avgProtein===null?'—':fmtNum(a.avgProtein,1);
+    setBalanceStat(document.getElementById('customBalanceLabel'),document.getElementById('customBalance'),a.net,'total');
+    document.getElementById('customKcalCount').textContent=`${a.kcalCount} / ${formatDayCount(a.totalDays)}`;
+    document.getElementById('customProteinCount').textContent=`${a.proteinCount} / ${formatDayCount(a.totalDays)}`;
+    document.getElementById('customKcalNote').textContent=a.kcalCount
+      ? `počítáno z ${a.kcalCount} ${a.kcalCount===1?'dne':'dnů'}`
+      : 'žádné platně zadané kcal';
+    document.getElementById('customProteinNote').textContent=a.proteinCount
+      ? `počítáno z ${a.proteinCount} ${a.proteinCount===1?'dne':'dnů'}`
+      : 'žádné platně zadané bílkoviny';
+    document.getElementById('customBalanceNote').textContent=a.kcalCount
+      ? `počítáno z ${a.kcalCount} ${a.kcalCount===1?'dne':'dnů'} s platně zadanými kcal`
+      : 'jen za dny s platně zadanými kcal';
+    renderCustomCompleteness(customStatsMissingData(from,to));
   }
 
   function setBalanceStat(labelEl,valueEl,net,mode='total'){
@@ -890,6 +1069,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     if(!document.getElementById('dayView').classList.contains('hidden')) renderDay();
     if(!document.getElementById('weekView').classList.contains('hidden')) renderWeek();
     if(!document.getElementById('monthView').classList.contains('hidden')) renderMonth();
+    if(!document.getElementById('customView').classList.contains('hidden')) renderCustom();
   }
 
   function saveSettings(){
@@ -1163,8 +1343,25 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       const v=btn.dataset.view;
       if(v==='week') weekAnchor=mondayOf(selectedDate);
       if(v==='month') monthAnchor=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+      if(v==='custom' && !customInitialized){
+        const today=todayLocal();
+        customFrom=dateKey(new Date(today.getFullYear(),today.getMonth(),1));
+        customTo=dateKey(today);
+        document.getElementById('customFrom').value=customFrom;
+        document.getElementById('customTo').value=customTo;
+        customInitialized=true;
+      }
       showMain(v);
     });
+  });
+
+  document.getElementById('customFrom').addEventListener('input',e=>{
+    customFrom=e.target.value;
+    renderCustom();
+  });
+  document.getElementById('customTo').addEventListener('input',e=>{
+    customTo=e.target.value;
+    renderCustom();
   });
 
   document.getElementById('kcalInput').addEventListener('input',e=>{
