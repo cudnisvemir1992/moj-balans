@@ -2,6 +2,9 @@
 
 # App exports / backups
 moj_balans_zaloha_*.json
+*.csv
+*.xlsx
+*.xls
 exports/
 backups/
 data/
