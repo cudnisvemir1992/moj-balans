@@ -332,6 +332,40 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-o
 }
 .custom-days{display:grid;gap:5px;font-size:1.05rem}
 .custom-missing-day{cursor:default}
+.field-label{display:block;min-width:0;color:var(--muted);font-size:.82rem;font-weight:700}
+.field-label input{
+  width:100%;min-width:0;min-height:46px;margin-top:5px;padding:9px 10px;border:1px solid var(--line);
+  border-radius:13px;background:var(--input-bg);color:var(--text)
+}
+.weight-entry-grid,.weight-export-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.weight-form-actions{margin-top:12px}
+.weight-period-tabs{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:12px;
+  padding:5px;border:1px solid var(--line);border-radius:15px;background:var(--soft2)
+}
+.weight-period-tab{
+  min-width:0;min-height:42px;padding:6px 3px;border:0;border-radius:11px;background:transparent;
+  color:var(--text);font-size:.82rem;font-weight:750
+}
+.weight-period-tab.active{background:var(--accent);color:var(--on-accent)}
+.weight-chart{min-height:230px;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:var(--soft2)}
+.weight-chart svg{display:block;width:100%;height:230px}
+.weight-chart .axis,.weight-chart .grid{stroke:var(--line);vector-effect:non-scaling-stroke}
+.weight-chart .grid{opacity:.6}
+.weight-chart .trend{fill:none;stroke:var(--accent);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.weight-chart .point{fill:var(--card);stroke:var(--accent);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.weight-chart text{fill:var(--muted);font-family:inherit;font-size:11px}
+.weight-chart-empty{min-height:230px;display:grid;place-items:center;padding:18px;color:var(--muted);text-align:center}
+.weight-history{display:grid;gap:7px}
+.weight-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;align-items:center;
+  padding:10px;border-radius:13px;background:var(--soft2)
+}
+.weight-row-date{font-weight:750}
+.weight-row-value{font-weight:800;white-space:nowrap}
+.weight-row-actions{display:flex;gap:6px}
+.weight-action{min-height:40px;padding:6px 9px;border-radius:11px}
+.weight-import-conflicts{margin-top:10px;font-size:.82rem;color:var(--warm);line-height:1.45}
 .footer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:17px}
 hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 @media(max-width:520px){
@@ -341,6 +375,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   .month-row{grid-template-columns:74px 1fr 1fr 1fr;font-size:.82rem;gap:5px}
   .actions{grid-template-columns:1fr}
   .data-warning-actions{grid-template-columns:1fr}
+  .weight-row{grid-template-columns:minmax(0,1fr) auto}
+  .weight-row-actions{grid-column:1/-1}
+  .weight-action{flex:1}
 }
 </style>
 </head>
@@ -350,6 +387,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     <h1 class="brand">Moj balans</h1>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn soft hidden" id="installBtn" type="button">Nainstalovat</button>
+      <button class="iconbtn" id="weightBtn" type="button" aria-label="Váha">⚖</button>
       <button class="iconbtn" id="settingsBtn" type="button" aria-label="Nastavení">⚙</button>
     </div>
   </header>
@@ -528,6 +566,74 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     </section>
   </section>
 
+  <section id="weightView" class="hidden">
+    <div class="navline">
+      <button class="iconbtn" id="backWeight" type="button" aria-label="Zpět">‹</button>
+      <div class="label">Váha</div>
+      <span></span>
+    </div>
+
+    <section class="card">
+      <h2 class="section-title">Zapsat váhu</h2>
+      <div class="weight-entry-grid">
+        <label class="field-label">Datum
+          <input id="weightDate" type="date">
+        </label>
+        <label class="field-label">Váha (kg)
+          <input id="weightInput" type="text" inputmode="decimal" autocomplete="off" placeholder="např. 82,4">
+        </label>
+      </div>
+      <div class="actions weight-form-actions">
+        <button class="btn primary" id="saveWeightBtn" type="button">Uložit vážení</button>
+        <button class="btn soft hidden" id="cancelWeightEditBtn" type="button">Zrušit úpravu</button>
+      </div>
+      <div id="weightFormNotice" class="notice hidden" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Vývoj váhy</h2>
+      <div class="weight-period-tabs" role="group" aria-label="Období grafu">
+        <button class="weight-period-tab" type="button" data-weight-months="1" aria-pressed="false">Měsíc</button>
+        <button class="weight-period-tab active" type="button" data-weight-months="3" aria-pressed="true">3 měsíce</button>
+        <button class="weight-period-tab" type="button" data-weight-months="6" aria-pressed="false">6 měsíců</button>
+        <button class="weight-period-tab" type="button" data-weight-months="12" aria-pressed="false">Rok</button>
+      </div>
+      <div class="navline">
+        <button class="iconbtn" id="prevWeightPeriod" type="button" aria-label="Předchozí období">‹</button>
+        <div class="label" id="weightPeriodLabel"></div>
+        <button class="iconbtn" id="nextWeightPeriod" type="button" aria-label="Následující období">›</button>
+      </div>
+      <div id="weightChart" class="weight-chart" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Historie vážení</h2>
+      <div id="weightHistory" class="weight-history"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Import / Export CSV</h2>
+      <div class="metric-name">Import vážení</div>
+      <div class="metric-sub">CSV s hlavičkou datum;hmotnost_kg. Existující hodnoty se automaticky nepřepisují.</div>
+      <button class="btn full" id="weightCsvImportBtn" type="button" style="margin-top:9px">Importovat CSV</button>
+      <input id="weightCsvImportFile" type="file" accept=".csv,text/csv" class="hidden">
+
+      <hr class="sep">
+
+      <div class="metric-name">Export vážení</div>
+      <div class="metric-sub">Exportují se pouze skutečně uložená vážení.</div>
+      <div class="weight-export-grid" style="margin-top:9px">
+        <label class="field-label">Od
+          <input id="weightCsvFrom" type="date">
+        </label>
+        <label class="field-label">Do
+          <input id="weightCsvTo" type="date">
+        </label>
+      </div>
+      <button class="btn full" id="weightCsvExportBtn" type="button" style="margin-top:9px">Exportovat CSV</button>
+    </section>
+  </section>
+
   <section id="settingsView" class="hidden">
     <div class="navline">
       <button class="iconbtn" id="backSettings" type="button" aria-label="Zpět">‹</button>
@@ -629,6 +735,19 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     </div>
   </dialog>
 
+  <dialog id="weightCsvDialog" class="csv-dialog" aria-labelledby="weightCsvDialogTitle">
+    <div class="csv-dialog-inner">
+      <h2 class="section-title" id="weightCsvDialogTitle">Kontrola importu vážení</h2>
+      <div id="weightCsvSummary" class="csv-summary"></div>
+      <div id="weightCsvErrors" class="csv-errors hidden"></div>
+      <div id="weightCsvConflicts" class="weight-import-conflicts hidden"></div>
+      <div class="csv-dialog-actions">
+        <button class="btn primary" id="weightCsvAddNewBtn" type="button">Přidat pouze nové záznamy</button>
+        <button class="btn soft" id="weightCsvCancelBtn" type="button">Zrušit</button>
+      </div>
+    </div>
+  </dialog>
+
 <script>
 (() => {
   'use strict';
@@ -648,7 +767,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
 
   let app = {
     settings:{bmr:1562,tdee:1800,proteinTarget:100,theme:'green'},
-    days:{}
+    days:{},
+    weights:{}
   };
 
   let selectedDate = todayLocal();
@@ -657,6 +777,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   let customFrom = '';
   let customTo = '';
   let customInitialized = false;
+  let weightRangeMonths = 3;
+  let weightRangeEndMonth = new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+  let editingWeightDate = null;
+  let pendingWeightCsvImport = null;
   let lastMainView = 'day';
 
   function pad(n){return String(n).padStart(2,'0')}
@@ -704,6 +828,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       proteinTarget:Number(app.settings?.proteinTarget)||100,
       theme:THEMES.some(t=>t.id===app.settings?.theme)?app.settings.theme:'green'
     };
+    if(!app.days || typeof app.days!=='object' || Array.isArray(app.days)) app.days={};
+    if(!app.weights || typeof app.weights!=='object' || Array.isArray(app.weights)) app.weights={};
   }
   function save(){
     if(!storageOK) return;
@@ -745,6 +871,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('weekView').classList.toggle('hidden',view!=='week');
     document.getElementById('monthView').classList.toggle('hidden',view!=='month');
     document.getElementById('customView').classList.toggle('hidden',view!=='custom');
+    document.getElementById('weightView').classList.add('hidden');
     document.getElementById('settingsView').classList.add('hidden');
     document.getElementById('mainTabs').classList.remove('hidden');
     document.getElementById('dataCompleteness').classList.toggle('hidden',view==='custom');
@@ -756,6 +883,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     document.getElementById('weekView').classList.add('hidden');
     document.getElementById('monthView').classList.add('hidden');
     document.getElementById('customView').classList.add('hidden');
+    document.getElementById('weightView').classList.add('hidden');
     document.getElementById('settingsView').classList.remove('hidden');
     document.getElementById('mainTabs').classList.add('hidden');
     document.getElementById('dataCompleteness').classList.add('hidden');
@@ -766,6 +894,20 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const monday=mondayOf(selectedDate);
     if(!csvFrom.value) csvFrom.value=dateKey(monday);
     if(!csvTo.value) csvTo.value=dateKey(addDays(monday,6));
+  }
+
+  function showWeight(){
+    document.getElementById('dayView').classList.add('hidden');
+    document.getElementById('weekView').classList.add('hidden');
+    document.getElementById('monthView').classList.add('hidden');
+    document.getElementById('customView').classList.add('hidden');
+    document.getElementById('settingsView').classList.add('hidden');
+    document.getElementById('weightView').classList.remove('hidden');
+    document.getElementById('mainTabs').classList.add('hidden');
+    document.getElementById('dataCompleteness').classList.add('hidden');
+    initializeWeightFields();
+    renderWeightView();
+    window.scrollTo({top:0,behavior:'smooth'});
   }
 
   function renderDay(){
@@ -1040,6 +1182,252 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     });
   }
 
+  function parseWeightValue(value){
+    const raw=String(value ?? '').trim();
+    if(!/^\d+(?:[.,]\d+)?$/.test(raw)) return {ok:false,value:null,number:null};
+    const normalized=raw.replace(',','.');
+    const number=Number(normalized);
+    if(!Number.isFinite(number) || number<=0) return {ok:false,value:null,number:null};
+    return {ok:true,value:normalized,number};
+  }
+
+  function displayWeight(value){
+    return String(value).replace('.',',');
+  }
+
+  function formatWeightDate(date){
+    return `${date.getDate()}. ${date.getMonth()+1}. ${date.getFullYear()}`;
+  }
+
+  function weightEntries(){
+    return Object.keys(app.weights || {}).filter(validIsoDate).sort().flatMap(date=>{
+      const parsed=parseWeightValue(app.weights[date]);
+      return parsed.ok ? [{date:parseDateKey(date),key:date,value:parsed.value,number:parsed.number}] : [];
+    });
+  }
+
+  function currentWeightRange(){
+    const endMonth=new Date(weightRangeEndMonth.getFullYear(),weightRangeEndMonth.getMonth(),1);
+    const start=new Date(endMonth.getFullYear(),endMonth.getMonth()-weightRangeMonths+1,1);
+    const end=new Date(endMonth.getFullYear(),endMonth.getMonth()+1,0);
+    return {start,end};
+  }
+
+  function weightEntriesInRange(){
+    const {start,end}=currentWeightRange();
+    return weightEntries().filter(entry=>entry.date>=start && entry.date<=end);
+  }
+
+  function weightPeriodLabel(){
+    const {start,end}=currentWeightRange();
+    if(weightRangeMonths===1) return formatMonth(start);
+    const startLabel=formatMonth(start);
+    const endLabel=formatMonth(end);
+    return `${startLabel} – ${endLabel.charAt(0).toLowerCase()+endLabel.slice(1)}`;
+  }
+
+  function setWeightFormNotice(message,warn=false){
+    const box=document.getElementById('weightFormNotice');
+    box.textContent=message;
+    box.className=`notice${warn?' warn':''}${message?'':' hidden'}`;
+  }
+
+  function initializeWeightFields(){
+    const dateInput=document.getElementById('weightDate');
+    if(!dateInput.value) dateInput.value=dateKey(todayLocal());
+
+    const from=document.getElementById('weightCsvFrom');
+    const to=document.getElementById('weightCsvTo');
+    if(!from.value || !to.value){
+      const entries=weightEntries();
+      from.value=entries.length ? entries[0].key : dateKey(new Date(todayLocal().getFullYear(),todayLocal().getMonth(),1));
+      to.value=entries.length ? entries[entries.length-1].key : dateKey(todayLocal());
+    }
+  }
+
+  function resetWeightForm(){
+    editingWeightDate=null;
+    document.getElementById('weightDate').value=dateKey(todayLocal());
+    document.getElementById('weightInput').value='';
+    document.getElementById('saveWeightBtn').textContent='Uložit vážení';
+    document.getElementById('cancelWeightEditBtn').classList.add('hidden');
+    setWeightFormNotice('');
+  }
+
+  function startWeightEdit(date){
+    const stored=app.weights?.[date];
+    if(stored===undefined) return;
+    editingWeightDate=date;
+    document.getElementById('weightDate').value=date;
+    document.getElementById('weightInput').value=displayWeight(stored);
+    document.getElementById('saveWeightBtn').textContent='Uložit změny';
+    document.getElementById('cancelWeightEditBtn').classList.remove('hidden');
+    setWeightFormNotice(`Upravuješ vážení z ${formatWeightDate(parseDateKey(date))}.`);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function saveWeightEntry(){
+    const date=document.getElementById('weightDate').value;
+    const parsed=parseWeightValue(document.getElementById('weightInput').value);
+    if(!validIsoDate(date)){
+      setWeightFormNotice('Vyber platné datum.',true);
+      return;
+    }
+    if(!parsed.ok){
+      setWeightFormNotice('Zadej platnou kladnou hmotnost v kg.',true);
+      return;
+    }
+
+    const originalDate=editingWeightDate;
+    const existing=app.weights?.[date];
+    if(originalDate){
+      if(date===originalDate){
+        if(existing===parsed.value){
+          setWeightFormNotice('Hodnota se nezměnila.');
+          return;
+        }
+        if(!confirm(`Pro ${formatWeightDate(parseDateKey(date))} už je uloženo ${displayWeight(existing)} kg. Nahradit hodnotou ${displayWeight(parsed.value)} kg?`)) return;
+      }else{
+        const message=existing!==undefined
+          ? `Pro ${formatWeightDate(parseDateKey(date))} už je uloženo ${displayWeight(existing)} kg. Přepsat tento záznam a přesunout sem upravované vážení?`
+          : `Změnit datum vážení z ${formatWeightDate(parseDateKey(originalDate))} na ${formatWeightDate(parseDateKey(date))}?`;
+        if(!confirm(message)) return;
+      }
+    }else if(existing!==undefined){
+      if(existing===parsed.value){
+        setWeightFormNotice('Pro toto datum už je stejná hmotnost uložená.');
+        return;
+      }
+      if(!confirm(`Pro ${formatWeightDate(parseDateKey(date))} už je uloženo ${displayWeight(existing)} kg. Nahradit hodnotou ${displayWeight(parsed.value)} kg?`)) return;
+    }
+
+    if(originalDate && originalDate!==date) delete app.weights[originalDate];
+    app.weights[date]=parsed.value;
+    save();
+    editingWeightDate=null;
+    document.getElementById('weightInput').value='';
+    document.getElementById('saveWeightBtn').textContent='Uložit vážení';
+    document.getElementById('cancelWeightEditBtn').classList.add('hidden');
+    setWeightFormNotice(`Vážení ${displayWeight(parsed.value)} kg bylo uloženo.`);
+    renderWeightView();
+  }
+
+  function deleteWeightEntry(date){
+    const stored=app.weights?.[date];
+    if(stored===undefined) return;
+    if(!confirm(`Smazat vážení ${displayWeight(stored)} kg ze dne ${formatWeightDate(parseDateKey(date))}?`)) return;
+    delete app.weights[date];
+    save();
+    if(editingWeightDate===date) resetWeightForm();
+    renderWeightView();
+  }
+
+  function svgElement(name,attributes={}){
+    const el=document.createElementNS('http://www.w3.org/2000/svg',name);
+    Object.entries(attributes).forEach(([key,value])=>el.setAttribute(key,String(value)));
+    return el;
+  }
+
+  function dateOrdinal(date){
+    return Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000;
+  }
+
+  function renderWeightGraph(entries){
+    const box=document.getElementById('weightChart');
+    box.innerHTML='';
+    if(!entries.length){
+      const empty=document.createElement('div');
+      empty.className='weight-chart-empty';
+      empty.textContent='Pro toto období nejsou uložená žádná vážení.';
+      box.appendChild(empty);
+      return;
+    }
+
+    const width=Math.max(280,box.clientWidth||640), height=230;
+    const margin={left:48,right:16,top:18,bottom:38};
+    const plotWidth=width-margin.left-margin.right, plotHeight=height-margin.top-margin.bottom;
+    const {start,end}=currentWeightRange();
+    const startOrdinal=dateOrdinal(start), endOrdinal=dateOrdinal(end);
+    const values=entries.map(entry=>entry.number);
+    let min=Math.min(...values), max=Math.max(...values);
+    const padding=min===max ? Math.max(.5,min*.005) : Math.max(.3,(max-min)*.12);
+    min=Math.max(0,min-padding);max+=padding;
+    const x=date=>margin.left+((dateOrdinal(date)-startOrdinal)/(endOrdinal-startOrdinal))*plotWidth;
+    const y=value=>margin.top+(1-(value-min)/(max-min))*plotHeight;
+
+    const svg=svgElement('svg',{viewBox:`0 0 ${width} ${height}`,role:'img','aria-label':`Vývoj váhy, ${entries.length} ${entries.length===1?'záznam':'záznamů'}`});
+    [0,.5,1].forEach(ratio=>{
+      const yy=margin.top+ratio*plotHeight;
+      svg.appendChild(svgElement('line',{x1:margin.left,y1:yy,x2:width-margin.right,y2:yy,class:'grid'}));
+      const label=svgElement('text',{x:margin.left-7,y:yy+4,'text-anchor':'end'});
+      label.textContent=fmtNum(max-ratio*(max-min),1);
+      svg.appendChild(label);
+    });
+    svg.appendChild(svgElement('line',{x1:margin.left,y1:margin.top+plotHeight,x2:width-margin.right,y2:margin.top+plotHeight,class:'axis'}));
+    svg.appendChild(svgElement('line',{x1:margin.left,y1:margin.top,x2:margin.left,y2:margin.top+plotHeight,class:'axis'}));
+
+    const startLabel=svgElement('text',{x:margin.left,y:height-13,'text-anchor':'start'});
+    startLabel.textContent=`${start.getDate()}. ${start.getMonth()+1}. ${start.getFullYear()}`;
+    svg.appendChild(startLabel);
+    const endLabel=svgElement('text',{x:width-margin.right,y:height-13,'text-anchor':'end'});
+    endLabel.textContent=`${end.getDate()}. ${end.getMonth()+1}. ${end.getFullYear()}`;
+    svg.appendChild(endLabel);
+    const unit=svgElement('text',{x:6,y:12});unit.textContent='kg';svg.appendChild(unit);
+
+    if(entries.length>1){
+      const path=entries.map((entry,index)=>`${index?'L':'M'} ${x(entry.date).toFixed(2)} ${y(entry.number).toFixed(2)}`).join(' ');
+      svg.appendChild(svgElement('path',{d:path,class:'trend'}));
+    }
+    entries.forEach(entry=>{
+      const point=svgElement('circle',{cx:x(entry.date).toFixed(2),cy:y(entry.number).toFixed(2),r:4,class:'point'});
+      const title=svgElement('title');
+      title.textContent=`${formatWeightDate(entry.date)}: ${displayWeight(entry.value)} kg`;
+      point.appendChild(title);
+      svg.appendChild(point);
+    });
+    box.appendChild(svg);
+  }
+
+  function renderWeightHistory(entries){
+    const list=document.getElementById('weightHistory');
+    list.innerHTML='';
+    if(!entries.length){
+      const empty=document.createElement('div');
+      empty.className='notice';
+      empty.textContent='Pro toto období nejsou uložená žádná vážení.';
+      list.appendChild(empty);
+      return;
+    }
+    [...entries].reverse().forEach(entry=>{
+      const row=document.createElement('div');
+      row.className='weight-row';
+      const date=document.createElement('div');date.className='weight-row-date';date.textContent=formatWeightDate(entry.date);
+      const value=document.createElement('div');value.className='weight-row-value';value.textContent=`${displayWeight(entry.value)} kg`;
+      const actions=document.createElement('div');actions.className='weight-row-actions';
+      const edit=document.createElement('button');edit.type='button';edit.className='btn weight-action';edit.textContent='Upravit';
+      edit.setAttribute('aria-label',`Upravit vážení z ${formatWeightDate(entry.date)}`);
+      edit.addEventListener('click',()=>startWeightEdit(entry.key));
+      const remove=document.createElement('button');remove.type='button';remove.className='btn soft weight-action';remove.textContent='Smazat';
+      remove.setAttribute('aria-label',`Smazat vážení z ${formatWeightDate(entry.date)}`);
+      remove.addEventListener('click',()=>deleteWeightEntry(entry.key));
+      actions.append(edit,remove);
+      row.append(date,value,actions);
+      list.appendChild(row);
+    });
+  }
+
+  function renderWeightView(){
+    const entries=weightEntriesInRange();
+    document.querySelectorAll('[data-weight-months]').forEach(button=>{
+      const active=Number(button.dataset.weightMonths)===weightRangeMonths;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+    document.getElementById('weightPeriodLabel').textContent=weightPeriodLabel();
+    renderWeightGraph(entries);
+    renderWeightHistory(entries);
+  }
+
   function renderSettings(){
     document.getElementById('bmrSetting').value=app.settings.bmr;
     document.getElementById('tdeeSetting').value=app.settings.tdee;
@@ -1216,18 +1604,174 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     downloadCSV(fromRaw,toRaw);
   }
 
+  function parseWeightCsv(text){
+    const clean=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+    const lines=clean.split('\n');
+    while(lines.length && lines[lines.length-1].trim()==='') lines.pop();
+    if(!lines.length) throw new Error('CSV je prázdné.');
+    if(lines[0]!=='datum;hmotnost_kg') throw new Error('Hlavička musí být přesně: datum;hmotnost_kg');
+
+    const rows=[], errors=[], seen=new Map();
+    for(let i=1;i<lines.length;i++){
+      const rowNo=i+1, line=lines[i];
+      if(line.trim()===''){
+        errors.push(`Řádek ${rowNo}: prázdný řádek není platné vážení.`);
+        continue;
+      }
+      const cols=line.split(';').map(value=>value.trim());
+      if(cols.length!==2){
+        errors.push(`Řádek ${rowNo}: očekávám 2 sloupce.`);
+        continue;
+      }
+      const [date,rawWeight]=cols;
+      if(!validIsoDate(date)){
+        errors.push(`Řádek ${rowNo}: neplatné datum „${date}“ (YYYY-MM-DD).`);
+        continue;
+      }
+      if(seen.has(date)){
+        errors.push(`Řádek ${rowNo}: datum ${date} je v souboru podruhé (první je řádek ${seen.get(date)}).`);
+        continue;
+      }
+      seen.set(date,rowNo);
+      const parsed=parseWeightValue(rawWeight);
+      if(!parsed.ok){
+        errors.push(`Řádek ${rowNo}: hmotnost musí být platné kladné číslo.`);
+        continue;
+      }
+      rows.push({date,weight:parsed.value,number:parsed.number});
+    }
+
+    const newRows=[],sameRows=[],conflicts=[];
+    rows.forEach(row=>{
+      const existing=app.weights?.[row.date];
+      if(existing===undefined){
+        newRows.push(row);
+        return;
+      }
+      const parsedExisting=parseWeightValue(existing);
+      if(parsedExisting.ok && parsedExisting.number===row.number) sameRows.push(row);
+      else conflicts.push({...row,existing});
+    });
+    return {rows,errors,newRows,sameRows,conflicts};
+  }
+
+  function showWeightCsvPreview(result){
+    pendingWeightCsvImport=result;
+    document.getElementById('weightCsvSummary').innerHTML=
+      `<div><strong>Platné řádky:</strong> ${result.rows.length}</div>
+       <div><strong>Nové záznamy:</strong> ${result.newRows.length}</div>
+       <div><strong>Existující shodné:</strong> ${result.sameRows.length}</div>
+       <div><strong>Konflikty:</strong> ${result.conflicts.length}</div>
+       <div><strong>Chybné řádky:</strong> ${result.errors.length}</div>`;
+
+    const errors=document.getElementById('weightCsvErrors');
+    if(result.errors.length){
+      errors.innerHTML=result.errors.slice(0,8).map(escHtml).join('<br>')+
+        (result.errors.length>8?`<br>… a dalších ${result.errors.length-8}`:'');
+      errors.classList.remove('hidden');
+    }else{
+      errors.textContent='';
+      errors.classList.add('hidden');
+    }
+
+    const conflicts=document.getElementById('weightCsvConflicts');
+    if(result.conflicts.length){
+      conflicts.innerHTML='<strong>Konflikty se nepřepíšou:</strong><br>'+result.conflicts.slice(0,8).map(item=>
+        `${escHtml(item.date)} – uložená ${escHtml(displayWeight(item.existing))} kg, import ${escHtml(displayWeight(item.weight))} kg`
+      ).join('<br>')+(result.conflicts.length>8?`<br>… a dalších ${result.conflicts.length-8}`:'');
+      conflicts.classList.remove('hidden');
+    }else{
+      conflicts.textContent='';
+      conflicts.classList.add('hidden');
+    }
+
+    document.getElementById('weightCsvAddNewBtn').disabled=result.errors.length>0 || result.newRows.length===0;
+    document.getElementById('weightCsvDialog').showModal();
+  }
+
+  function applyWeightCsvImport(){
+    const result=pendingWeightCsvImport;
+    if(!result || result.errors.length) return;
+    let added=0,skipped=0;
+    result.newRows.forEach(row=>{
+      if(Object.prototype.hasOwnProperty.call(app.weights,row.date)){
+        skipped++;
+        return;
+      }
+      app.weights[row.date]=row.weight;
+      added++;
+    });
+    if(added) save();
+    pendingWeightCsvImport=null;
+    document.getElementById('weightCsvDialog').close();
+    renderWeightView();
+    alert(`Import vážení dokončen. Přidáno: ${added}, přeskočeno: ${result.sameRows.length+result.conflicts.length+skipped}.`);
+  }
+
+  async function importWeightCsvFile(file){
+    try{
+      showWeightCsvPreview(parseWeightCsv(await file.text()));
+    }catch(e){
+      alert('CSV import vážení se nepodařil: '+e.message);
+    }
+  }
+
+  function exportWeightCsv(){
+    const fromRaw=document.getElementById('weightCsvFrom').value;
+    const toRaw=document.getElementById('weightCsvTo').value;
+    if(!validIsoDate(fromRaw) || !validIsoDate(toRaw)){
+      alert('Vyber platné datum Od i Do.');
+      return;
+    }
+    const from=parseDateKey(fromRaw), to=parseDateKey(toRaw);
+    if(from>to){
+      alert('Datum Od nesmí být později než datum Do.');
+      return;
+    }
+    const rows=weightEntries().filter(entry=>entry.date>=from && entry.date<=to);
+    if(!rows.length){
+      alert('Ve zvoleném období nejsou žádná uložená vážení.');
+      return;
+    }
+    const csv='\ufeffdatum;hmotnost_kg\n'+rows.map(entry=>`${entry.key};${displayWeight(entry.value)}`).join('\n');
+    downloadBlob(`vazeni_${fromRaw}_${toRaw}.csv`,csv,'text/csv;charset=utf-8');
+  }
+
+  function validatedImportedWeights(weights){
+    if(!weights || typeof weights!=='object' || Array.isArray(weights)) throw new Error('Evidence váhy v záloze nemá platný formát.');
+    const clean={};
+    for(const [date,value] of Object.entries(weights)){
+      if(!validIsoDate(date)) throw new Error(`Evidence váhy obsahuje neplatné datum „${date}“.`);
+      const parsed=parseWeightValue(value);
+      if(!parsed.ok) throw new Error(`Evidence váhy obsahuje neplatnou hmotnost pro ${date}.`);
+      clean[date]=parsed.value;
+    }
+    return clean;
+  }
+
+  function prepareJsonImport(text){
+    const obj=JSON.parse(text);
+    const data=obj?.data?.days?obj.data:(obj?.days?obj:null);
+    if(!data || !data.settings || typeof data.days!=='object' || Array.isArray(data.days)) throw new Error('Neplatný formát.');
+    const hasWeights=Object.prototype.hasOwnProperty.call(data,'weights');
+    const weights=hasWeights ? validatedImportedWeights(data.weights) : {...(app.weights || {})};
+    return {data:{...data,weights},hasWeights,weightCount:Object.keys(weights).length};
+  }
+
   function exportJSON(){
-    const payload={app:'Moj balans',version:1,exportedAt:new Date().toISOString(),data:app};
+    const payload={app:'Moj balans',version:2,exportedAt:new Date().toISOString(),data:app};
     downloadBlob(`moj_balans_zaloha_${dateKey(todayLocal())}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
   }
 
   async function importJSON(file){
     try{
-      const text=await file.text(), obj=JSON.parse(text);
-      const data=obj?.data?.days?obj.data:(obj?.days?obj:null);
-      if(!data) throw new Error('Neplatný formát.');
-      if(!confirm('Import nahradí současná data v této aplikaci. Pokračovat?')) return;
-      app=data; save(); load(); applyTheme(); showMain('day'); alert('Záloha byla načtena.');
+      const prepared=prepareJsonImport(await file.text());
+      const currentWeightCount=Object.keys(app.weights || {}).length;
+      const message=prepared.hasWeights
+        ? `Doporučení: nejdřív vytvoř aktuální kompletní JSON zálohu. Import nahradí nastavení, údaje kcal/bílkovin i celou historii váhy (aktuálně ${currentWeightCount}, v záloze ${prepared.weightCount} záznamů). Pokračovat?`
+        : 'Doporučení: nejdřív vytvoř aktuální kompletní JSON zálohu. Import nahradí nastavení a údaje kcal/bílkovin. Tato starší záloha neobsahuje váhu, proto současná vážení zůstanou zachována. Pokračovat?';
+      if(!confirm(message)) return;
+      app=prepared.data;save();load();applyTheme();showMain('day');alert('Záloha byla načtena.');
     }catch(e){alert('Import se nepodařil: '+e.message)}
   }
 
@@ -1379,7 +1923,26 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   document.getElementById('prevMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()-1,1);renderMonth()});
   document.getElementById('nextMonth').addEventListener('click',()=>{monthAnchor=new Date(monthAnchor.getFullYear(),monthAnchor.getMonth()+1,1);renderMonth()});
 
+  document.querySelectorAll('[data-weight-months]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      weightRangeMonths=Number(button.dataset.weightMonths);
+      renderWeightView();
+    });
+  });
+  document.getElementById('prevWeightPeriod').addEventListener('click',()=>{
+    weightRangeEndMonth=new Date(weightRangeEndMonth.getFullYear(),weightRangeEndMonth.getMonth()-weightRangeMonths,1);
+    renderWeightView();
+  });
+  document.getElementById('nextWeightPeriod').addEventListener('click',()=>{
+    weightRangeEndMonth=new Date(weightRangeEndMonth.getFullYear(),weightRangeEndMonth.getMonth()+weightRangeMonths,1);
+    renderWeightView();
+  });
+  document.getElementById('saveWeightBtn').addEventListener('click',saveWeightEntry);
+  document.getElementById('cancelWeightEditBtn').addEventListener('click',resetWeightForm);
+
+  document.getElementById('weightBtn').addEventListener('click',showWeight);
   document.getElementById('settingsBtn').addEventListener('click',showSettings);
+  document.getElementById('backWeight').addEventListener('click',()=>showMain(lastMainView));
   document.getElementById('backSettings').addEventListener('click',()=>showMain(lastMainView));
   ['bmrSetting','tdeeSetting','proteinTargetSetting'].forEach(id=>{
     document.getElementById(id).addEventListener('change',()=>{saveSettings();renderSettings()});
@@ -1400,6 +1963,17 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   document.getElementById('csvAddNewBtn').addEventListener('click',()=>applyCsvImport('new'));
   document.getElementById('csvOverwriteBtn').addEventListener('click',()=>applyCsvImport('overwrite'));
   document.getElementById('csvCancelBtn').addEventListener('click',()=>{pendingCsvImport=null;document.getElementById('csvDialog').close()});
+  document.getElementById('weightCsvImportBtn').addEventListener('click',()=>document.getElementById('weightCsvImportFile').click());
+  document.getElementById('weightCsvImportFile').addEventListener('change',e=>{
+    if(e.target.files?.[0]) importWeightCsvFile(e.target.files[0]);
+    e.target.value='';
+  });
+  document.getElementById('weightCsvAddNewBtn').addEventListener('click',applyWeightCsvImport);
+  document.getElementById('weightCsvCancelBtn').addEventListener('click',()=>{
+    pendingWeightCsvImport=null;
+    document.getElementById('weightCsvDialog').close();
+  });
+  document.getElementById('weightCsvExportBtn').addEventListener('click',exportWeightCsv);
   document.getElementById('csvExportBackBtn').addEventListener('click',()=>{
     pendingCsvExport=null;
     document.getElementById('csvExportWarningDialog').close();
@@ -1411,6 +1985,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     if(pending) downloadCSV(pending.fromRaw,pending.toRaw);
   });
   document.getElementById('csvExportWarningDialog').addEventListener('cancel',()=>{pendingCsvExport=null});
+  window.addEventListener('resize',()=>{
+    if(!document.getElementById('weightView').classList.contains('hidden')) renderWeightView();
+  });
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
