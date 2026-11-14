@@ -832,12 +832,25 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     if(!app.weights || typeof app.weights!=='object' || Array.isArray(app.weights)) app.weights={};
   }
   function save(){
-    if(!storageOK) return;
+    if(!storageOK) return false;
+    let previousRaw=null, writeCompleted=false;
     try{
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(app));
+      previousRaw=localStorage.getItem(STORAGE_KEY);
+      const serialized=JSON.stringify(app);
+      localStorage.setItem(STORAGE_KEY,serialized);
+      writeCompleted=true;
+      if(localStorage.getItem(STORAGE_KEY)!==serialized) throw new Error('Uložená data se nepodařilo ověřit.');
+      return true;
     }catch(e){
+      if(writeCompleted){
+        try{
+          if(previousRaw===null) localStorage.removeItem(STORAGE_KEY);
+          else localStorage.setItem(STORAGE_KEY,previousRaw);
+        }catch(rollbackError){}
+      }
       storageOK=false;
       renderStorageNotice();
+      return false;
     }
   }
 
@@ -1301,9 +1314,15 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       if(!confirm(`Pro ${formatWeightDate(parseDateKey(date))} už je uloženo ${displayWeight(existing)} kg. Nahradit hodnotou ${displayWeight(parsed.value)} kg?`)) return;
     }
 
+    const previousWeights={...app.weights};
     if(originalDate && originalDate!==date) delete app.weights[originalDate];
     app.weights[date]=parsed.value;
-    save();
+    if(!save()){
+      app.weights=previousWeights;
+      setWeightFormNotice('Vážení se nepodařilo bezpečně uložit. Předchozí data zůstala beze změny.',true);
+      renderWeightView();
+      return;
+    }
     editingWeightDate=null;
     document.getElementById('weightInput').value='';
     document.getElementById('saveWeightBtn').textContent='Uložit vážení';
@@ -1316,8 +1335,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const stored=app.weights?.[date];
     if(stored===undefined) return;
     if(!confirm(`Smazat vážení ${displayWeight(stored)} kg ze dne ${formatWeightDate(parseDateKey(date))}?`)) return;
+    const previousWeights={...app.weights};
     delete app.weights[date];
-    save();
+    if(!save()){
+      app.weights=previousWeights;
+      setWeightFormNotice('Vážení se nepodařilo bezpečně smazat. Předchozí data zůstala beze změny.',true);
+      renderWeightView();
+      return;
+    }
     if(editingWeightDate===date) resetWeightForm();
     renderWeightView();
   }
@@ -1693,6 +1718,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const result=pendingWeightCsvImport;
     if(!result || result.errors.length) return;
     let added=0,skipped=0;
+    const previousWeights={...app.weights};
     result.newRows.forEach(row=>{
       if(Object.prototype.hasOwnProperty.call(app.weights,row.date)){
         skipped++;
@@ -1701,7 +1727,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
       app.weights[row.date]=row.weight;
       added++;
     });
-    if(added) save();
+    if(added && !save()){
+      app.weights=previousWeights;
+      pendingWeightCsvImport=null;
+      document.getElementById('weightCsvDialog').close();
+      renderWeightView();
+      alert('Import vážení se nepodařilo bezpečně uložit. Předchozí data zůstala beze změny.');
+      return;
+    }
     pendingWeightCsvImport=null;
     document.getElementById('weightCsvDialog').close();
     renderWeightView();
@@ -1771,7 +1804,15 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
         ? `Doporučení: nejdřív vytvoř aktuální kompletní JSON zálohu. Import nahradí nastavení, údaje kcal/bílkovin i celou historii váhy (aktuálně ${currentWeightCount}, v záloze ${prepared.weightCount} záznamů). Pokračovat?`
         : 'Doporučení: nejdřív vytvoř aktuální kompletní JSON zálohu. Import nahradí nastavení a údaje kcal/bílkovin. Tato starší záloha neobsahuje váhu, proto současná vážení zůstanou zachována. Pokračovat?';
       if(!confirm(message)) return;
-      app=prepared.data;save();load();applyTheme();showMain('day');alert('Záloha byla načtena.');
+      const previousApp=app;
+      app=prepared.data;
+      if(!save()){
+        app=previousApp;
+        applyTheme();
+        alert('Zálohu se nepodařilo bezpečně uložit. Předchozí data zůstala beze změny.');
+        return;
+      }
+      load();applyTheme();showMain('day');alert('Záloha byla načtena.');
     }catch(e){alert('Import se nepodařil: '+e.message)}
   }
 
