@@ -358,13 +358,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-o
 .weight-chart .point{fill:var(--card);stroke:var(--accent);stroke-width:2.5;vector-effect:non-scaling-stroke}
 .weight-chart text{fill:var(--muted);font-family:inherit;font-size:11px}
 .weight-chart-empty{min-height:230px;display:grid;place-items:center;padding:18px;color:var(--muted);text-align:center}
-.weight-history{display:grid;gap:7px}
+.weight-history{display:grid;gap:4px}
 .weight-row{
   display:grid;grid-template-columns:minmax(0,1fr) auto 44px;gap:9px;align-items:center;
-  padding:10px;border-radius:13px;background:var(--soft2)
+  min-height:44px;padding:0 5px 0 10px;border-radius:11px;background:var(--soft2);font-size:.88rem
 }
-.weight-row-date{font-weight:750}
-.weight-row-value{font-weight:800;white-space:nowrap}
+.weight-row-date,.weight-row-value{font-weight:400;font-variant-numeric:tabular-nums}
+.weight-row-value{white-space:nowrap}
 .weight-menu-wrap{position:relative}
 .weight-menu-wrap.open{z-index:10}
 .weight-menu-button{
@@ -379,13 +379,19 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--text);outline-o
 .weight-menu .delete{color:var(--warm)}
 .weight-import-conflicts{margin-top:10px;font-size:.82rem;color:var(--warm);line-height:1.45}
 .weight-kcal-open{margin-bottom:12px}
+.weight-kcal-heading{
+  min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:15px;
+  background:var(--soft2);text-align:center
+}
+.weight-kcal-heading-title{font-size:1.04rem;font-weight:800;line-height:1.2}
+.weight-kcal-heading-subtitle{margin-top:3px;color:var(--muted);font-size:.75rem;line-height:1.25}
 .weight-kcal-chart{min-height:280px;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:var(--soft2)}
 .weight-kcal-chart svg{display:block;width:100%;height:280px}
 .weight-kcal-chart .axis,.weight-kcal-chart .grid{stroke:var(--line);vector-effect:non-scaling-stroke}
 .weight-kcal-chart .grid{opacity:.6}
 .weight-kcal-chart .weight-line{fill:none;stroke:var(--accent);stroke-width:2.6;vector-effect:non-scaling-stroke}
 .weight-kcal-chart .kcal-line{fill:none;stroke:var(--accent-2);stroke-width:2.6;vector-effect:non-scaling-stroke}
-.weight-kcal-chart .weight-point{fill:var(--card);stroke:var(--accent);stroke-width:2.6;vector-effect:non-scaling-stroke}
+.weight-kcal-chart .weight-point{fill:var(--card);stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
 .weight-kcal-chart .kcal-point{fill:var(--accent-2);stroke:var(--card);stroke-width:1;vector-effect:non-scaling-stroke}
 .weight-kcal-chart text{fill:var(--muted);font-family:inherit;font-size:11px}
 .weight-kcal-legend{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;font-weight:750}
@@ -685,7 +691,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
   <section id="weightKcalView" class="hidden">
     <div class="navline">
       <button class="iconbtn" id="backWeightKcal" type="button" aria-label="Zpět do Váhy">‹</button>
-      <div class="label">Váha a Kcal</div>
+      <div class="weight-kcal-heading">
+        <div class="weight-kcal-heading-title">Váha a Kcal</div>
+        <div class="weight-kcal-heading-subtitle">Vývoj váhy a 7denní průměr kcal</div>
+      </div>
       <span></span>
     </div>
 
@@ -1379,6 +1388,10 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     return `${date.getDate()}. ${date.getMonth()+1}. ${date.getFullYear()}`;
   }
 
+  function formatWeightHistoryDate(date){
+    return `${String(date.getDate()).padStart(2,'0')}. ${String(date.getMonth()+1).padStart(2,'0')}. ${date.getFullYear()}`;
+  }
+
   function weightEntries(){
     return Object.keys(app.weights || {}).filter(validIsoDate).sort().flatMap(date=>{
       const parsed=parseWeightValue(app.weights[date]);
@@ -1613,14 +1626,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     [...entries].reverse().forEach(entry=>{
       const row=document.createElement('div');
       row.className='weight-row';
-      const date=document.createElement('div');date.className='weight-row-date';date.textContent=formatWeightDate(entry.date);
+      const date=document.createElement('div');date.className='weight-row-date';date.textContent=formatWeightHistoryDate(entry.date);
       const value=document.createElement('div');value.className='weight-row-value';value.textContent=`${displayWeight(entry.value)} kg`;
       const menuWrap=document.createElement('div');
       const isOpen=openWeightMenuDate===entry.key;
       menuWrap.className=`weight-menu-wrap${isOpen?' open':''}`;
       const menuButton=document.createElement('button');
       menuButton.type='button';menuButton.className='weight-menu-button';menuButton.textContent='⋮';
-      menuButton.setAttribute('aria-label',`Možnosti vážení z ${formatWeightDate(entry.date)}`);
+      menuButton.setAttribute('aria-label',`Možnosti vážení z ${formatWeightHistoryDate(entry.date)}`);
       menuButton.setAttribute('aria-haspopup','menu');
       menuButton.setAttribute('aria-expanded',String(isOpen));
       menuButton.addEventListener('click',event=>{
@@ -1776,7 +1789,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
     const kcalY=value=>margin.top+(1-(value-kcalScale.min)/(kcalScale.max-kcalScale.min))*plotHeight;
     const svg=svgElement('svg',{viewBox:`0 0 ${width} ${height}`,role:'img','aria-label':`Váha a Kcal od ${formatWeightDate(range.start)} do ${formatWeightDate(range.end)}`});
 
-    [0,.5,1].forEach(ratio=>{
+    [0,.25,.5,.75,1].forEach(ratio=>{
       const yy=margin.top+ratio*plotHeight;
       svg.appendChild(svgElement('line',{x1:margin.left,y1:yy,x2:width-margin.right,y2:yy,class:'grid'}));
       if(weightScale){
@@ -1811,7 +1824,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:15px 0}
         svg.appendChild(svgElement('path',{d:path,class:'weight-line'}));
       }
       data.weights.forEach(entry=>{
-        const point=svgElement('circle',{cx:x(entry.date).toFixed(2),cy:weightY(entry.number).toFixed(2),r:4,class:'weight-point'});
+        const point=svgElement('circle',{cx:x(entry.date).toFixed(2),cy:weightY(entry.number).toFixed(2),r:3,class:'weight-point'});
         const title=svgElement('title');
         title.textContent=`${formatWeightDate(entry.date)}: ${displayWeight(entry.value)} kg`;
         point.appendChild(title);svg.appendChild(point);
